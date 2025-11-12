@@ -1,11 +1,7 @@
-# Dependencias de Node.js (la carpeta más pesada)
 /node_modules
 
-# Archivo de secretos y contraseñas
 .env
 
-# Datos de la base de datos local
 /postgres-data
 
-# Logs de NPM
 npm-debug.log

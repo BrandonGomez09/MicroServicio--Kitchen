@@ -1,29 +1,32 @@
 class ApproveKitchenUseCase {
-  constructor(kitchenRepository) {
+  constructor(kitchenRepository, eventPublisher) {
     this.kitchenRepository = kitchenRepository;
+    this.eventPublisher = eventPublisher;
   }
 
   async execute(kitchenId, adminUserId) {
-    // 1. Verificamos si la cocina existe (opcional pero recomendado)
     const kitchen = await this.kitchenRepository.findById(kitchenId);
-    if (!kitchen) {
-      throw new Error('Cocina no encontrada');
-    }
+    if (!kitchen) throw new Error('Cocina no encontrada');
 
-    // 2. Preparamos los datos a actualizar
     const dataToUpdate = {
       approval_status: 'approved',
       approval_date: new Date(),
-      is_active: true, // Al aprobarla, la activamos
-      approved_by: adminUserId, // Guardamos qué admin la aprobó
-      rejection_reason: null, // Limpiamos por si fue rechazada antes
+      is_active: true,
+      approved_by: adminUserId,
+      rejection_reason: null,
     };
 
-    // 3. Usamos el repositorio para actualizar la BD
-    const updatedKitchen = await this.kitchenRepository.update(
-      kitchenId,
-      dataToUpdate
-    );
+    const updatedKitchen = await this.kitchenRepository.update(kitchenId, dataToUpdate);
+
+    // ✅ Emitir evento RabbitMQ
+    await this.eventPublisher.publish('kitchen.approved', {
+      kitchenId: updatedKitchen.id,
+      ownerId: updatedKitchen.owner_id,
+      kitchenName: updatedKitchen.name,
+      approvedBy: adminUserId,
+      timestamp: new Date().toISOString(),
+    });
+
     return updatedKitchen;
   }
 }

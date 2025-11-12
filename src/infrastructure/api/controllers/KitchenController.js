@@ -1,26 +1,48 @@
-// 1. Importamos los casos de uso ya "inyectados"
 const {
   requestKitchenUseCase,
   getPendingKitchensUseCase,
   approveKitchenUseCase,
   rejectKitchenUseCase,
+  requestLocationUseCase,
 } = require('../dependencies/dependencies');
 
 class KitchenController {
-  // --- POST /api/kitchens ---
   async requestKitchen(req, res) {
     try {
-      // 2. El body de la solicitud (los datos del formulario)
       const data = req.body;
-      // Asumimos que el front nos manda 'owner_id' y 'location_id'
-      const newKitchen = await requestKitchenUseCase.execute(data);
+
+      const locationData = {
+        street_address: data.street_address,
+        neighborhood: data.neighborhood,
+        state_id: data.state_id,
+        municipality_id: data.municipality_id,
+        postal_code: data.postal_code,
+        capacity: data.capacity,
+        contact_phone: data.contact_phone,
+        contact_email: data.contact_email,
+        name: data.name
+      };
+      console.log('📦 Body recibido en el controlador:', req.body);
+      const newLocation = await requestLocationUseCase.execute(locationData);
+
+      const kitchenData = {
+        name: data.name,
+        description: data.description,
+        owner_id: data.owner_id,
+        location_id: newLocation.id,
+        contact_phone: data.contact_phone,
+        contact_email: data.contact_email,
+        image_url: data.image_url,
+      };
+      console.log('📦 Body recibido en el controlador:', req.body);
+      const newKitchen = await requestKitchenUseCase.execute(kitchenData);
+
       res.status(201).json(newKitchen);
     } catch (error) {
       res.status(500).json({ message: 'Error al procesar la solicitud', error: error.message });
     }
   }
 
-  // --- GET /api/kitchens/pending ---
   async getPendingKitchens(req, res) {
     try {
       const pendingKitchens = await getPendingKitchensUseCase.execute();
@@ -30,39 +52,27 @@ class KitchenController {
     }
   }
 
-  // --- POST /api/kitchens/:id/approve ---
   async approveKitchen(req, res) {
     try {
-      const { id } = req.params; // El ID de la cocina (ej. 123)
-      // Asumimos que tenemos la ID del admin (ej. por auth)
-      // Por ahora, la pondremos quemada como '1'
-      const adminUserId = 1; 
-
-      const updatedKitchen = await approveKitchenUseCase.execute(id, adminUserId);
-      res.status(200).json(updatedKitchen);
+      const { id } = req.params;
+      const adminUserId = req.user?.id || '';
+      const result = await dependencies.approveKitchenUseCase.execute(id, adminUserId);
+      res.status(200).json(result);
     } catch (error) {
-      res.status(500).json({ message: 'Error al aprobar la cocina', error: error.message });
+      res.status(500).json({ error: error.message });
     }
   }
 
-  // --- POST /api/kitchens/:id/reject ---
   async rejectKitchen(req, res) {
     try {
       const { id } = req.params;
-      const { reason } = req.body; // El front nos debe mandar el motivo
-      const adminUserId = 1; // ID del admin quemada por ahora
-
-      if (!reason) {
-        return res.status(400).json({ message: 'Se requiere un motivo para rechazar' });
-      }
-
-      const updatedKitchen = await rejectKitchenUseCase.execute(id, reason, adminUserId);
-      res.status(200).json(updatedKitchen);
+      const { reason } = req.body;
+      const adminUserId = req.user?.id || 1;
+      const result = await dependencies.rejectKitchenUseCase.execute(id, reason, adminUserId);
+      res.status(200).json(result);
     } catch (error) {
-      res.status(500).json({ message: 'Error al rechazar la cocina', error: error.message });
+      res.status(500).json({ error: error.message });
     }
   }
 }
-
-// Exportamos una única instancia del controlador
 module.exports = new KitchenController();

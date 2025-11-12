@@ -1,18 +1,16 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database'); // Importamos nuestra conexión
+const sequelize = require('../config/database');
 
-// Definimos el modelo que corresponde a la tabla "kitchens"
 const KitchenModel = sequelize.define(
-  'Kitchen', // Nombre del modelo (Sequelize usará "Kitchens" como nombre de tabla)
+  'Kitchen', 
   {
-    // --- Columnas ---
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
     name: {
-      type: DataTypes.STRING, // varchar
+      type: DataTypes.STRING,
       allowNull: false,
     },
     description: {
@@ -21,12 +19,10 @@ const KitchenModel = sequelize.define(
     owner_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      // Aquí Sequelize asume una FK.
     },
     location_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      // Aquí Sequelize asume una FK.
     },
     contact_phone: {
       type: DataTypes.STRING,
@@ -38,8 +34,8 @@ const KitchenModel = sequelize.define(
       type: DataTypes.STRING,
     },
     registration_date: {
-      type: DataTypes.DATE, // timestamp
-      defaultValue: DataTypes.NOW, // Se pone la fecha actual al crear
+      type: DataTypes.DATE, 
+      defaultValue: DataTypes.NOW,
     },
     approval_status: {
       type: DataTypes.ENUM('pending', 'approved', 'rejected'),
@@ -47,10 +43,9 @@ const KitchenModel = sequelize.define(
     },
     approved_by: {
       type: DataTypes.INTEGER,
-      // Aquí Sequelize asume una FK.
     },
     approval_date: {
-      type: DataTypes.DATE, // timestamp
+      type: DataTypes.DATE,
     },
     rejection_reason: {
       type: DataTypes.TEXT,
@@ -61,9 +56,8 @@ const KitchenModel = sequelize.define(
     },
   },
   {
-    // --- Opciones ---
-    tableName: 'kitchens', // Le decimos a Sequelize el nombre exacto de la tabla
-    timestamps: false, // Deshabilitamos 'createdAt' y 'updatedAt'
+    tableName: 'kitchens', 
+    timestamps: false, 
   }
 );
 

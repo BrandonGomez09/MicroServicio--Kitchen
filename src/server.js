@@ -1,25 +1,34 @@
 require('dotenv').config();
 const app = require('./app');
 const sequelize = require('./infrastructure/database/config/database');
-const KitchenModel = require('./infrastructure/database/models/KitchenModel');
-const LocationModel = require('./infrastructure/database/models/LocationModel');
+const publisher = require('./infrastructure/adapters/RabbitMQPublisher');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3004;
 
 async function startServer() {
   try {
-    await sequelize.authenticate();
-    console.log('Conexión a la base de datos (PostgreSQL) establecida.');
+    console.log('🚀 Iniciando Kitchen Service...');
 
-    await sequelize.sync({ alter: true }); 
-    console.log('Modelos [Kitchen, Location] sincronizados con la base de datos.');
+    await sequelize.authenticate();
+    console.log('✅ Conexión a la base de datos (PostgreSQL) establecida.');
+
+    if (process.env.NODE_ENV === 'development') {
+      await sequelize.sync({ alter: true });
+      console.log('🔄 Tablas sincronizadas automáticamente con { alter: true }');
+    } else {
+      await sequelize.sync();
+      console.log('✅ Tablas verificadas (sin alteraciones)');
+    }
+
+    await publisher.connect();
+    console.log('🐇 RabbitMQ conectado correctamente (Publisher listo).');
 
     app.listen(PORT, () => {
-      console.log(`Servidor corriendo en el puerto ${PORT}`);
-      console.log(`API disponible en http://localhost:${PORT}`);
+      console.log(`🌐 Servidor corriendo en el puerto ${PORT}`);
     });
+
   } catch (error) {
-    console.error('Error al iniciar el servidor:', error);
+    console.error('❌ Error al iniciar el servidor:', error);
     process.exit(1);
   }
 }

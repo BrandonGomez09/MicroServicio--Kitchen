@@ -5,20 +5,26 @@ const RequestKitchenUseCase = require('../../../application/use-cases/RequestKit
 const GetPendingKitchensUseCase = require('../../../application/use-cases/GetPendingKitchensUseCase');
 const ApproveKitchenUseCase = require('../../../application/use-cases/ApproveKitchenUseCase');
 const RejectKitchenUseCase = require('../../../application/use-cases/RejectKitchenUseCase');
+const RequestLocationUseCase = require('../../../application/use-cases/RequestLocationUseCase');
+
+const RabbitMQPublisher = require('../../adapters/RabbitMQPublisher');
+const eventPublisher = RabbitMQPublisher;
 
 const kitchenRepository = new SequelizeKitchenRepository();
 const locationRepository = new SequelizeLocationRepository();
 
-const requestKitchenUseCase = new RequestKitchenUseCase(kitchenRepository);
+const requestKitchenUseCase = new RequestKitchenUseCase(kitchenRepository, eventPublisher);
 const getPendingKitchensUseCase = new GetPendingKitchensUseCase(kitchenRepository);
-const approveKitchenUseCase = new ApproveKitchenUseCase(kitchenRepository);
-const rejectKitchenUseCase = new RejectKitchenUseCase(kitchenRepository);
+const requestLocationUseCase = new RequestLocationUseCase(locationRepository);
+const approveKitchenUseCase = new ApproveKitchenUseCase(kitchenRepository, eventPublisher);
+const rejectKitchenUseCase = new RejectKitchenUseCase(kitchenRepository, eventPublisher);
 
 module.exports = {
   requestKitchenUseCase,
   getPendingKitchensUseCase,
   approveKitchenUseCase,
   rejectKitchenUseCase,
-  locationRepository,
+  requestLocationUseCase,
   kitchenRepository,
+  locationRepository,
 };
