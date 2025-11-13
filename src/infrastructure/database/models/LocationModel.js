@@ -1,3 +1,5 @@
+// src/infrastructure/database/models/LocationModel.js
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -46,7 +48,10 @@ const LocationModel = sequelize.define('Location', {
   }
 }, {
   tableName: 'locations',
-  timestamps: true
+  
+  // --- INICIO DE LA CORRECCIÓN ---
+  timestamps: false // Cambiamos esto de 'true' a 'false'
+  // --- FIN DE LA CORRECCIÓN ---
 });
 
 module.exports = LocationModel;

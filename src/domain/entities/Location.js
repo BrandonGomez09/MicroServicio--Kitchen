@@ -1,5 +1,26 @@
+// src/domain/entities/Location.js
+
 class Location {
-  constructor({ name, streetAddress, neighborhood, stateId, municipalityId, postalCode, contactPhone, contactEmail, is_active }) {
+  constructor({ 
+    // --- INICIO DE LA CORRECCIÓN ---
+    id, // Agregamos 'id' aquí
+    // --- FIN DE LA CORRECCIÓN ---
+
+    name, 
+    streetAddress, 
+    neighborhood, 
+    stateId, 
+    municipalityId, 
+    postalCode, 
+    contactPhone, 
+    contactEmail, 
+    is_active 
+  }) {
+    
+    // --- INICIO DE LA CORRECCIÓN ---
+    this.id = id; // Y lo asignamos aquí
+    // --- FIN DE LA CORRECCIÓN ---
+
     this.name = name;
     this.streetAddress = streetAddress;
     this.neighborhood = neighborhood;
@@ -13,6 +34,10 @@ class Location {
 
   toJSON() {
     return {
+      // --- INICIO DE LA CORRECCIÓN ---
+      id: this.id, // Lo agregamos también al JSON de respuesta
+      // --- FIN DE LA CORRECCIÓN ---
+
       name: this.name,
       streetAddress: this.streetAddress,
       neighborhood: this.neighborhood,
