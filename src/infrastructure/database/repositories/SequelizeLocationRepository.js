@@ -9,8 +9,6 @@ class SequelizeLocationRepository {
   }
 
   async create(locationData) {
-  // Si el objeto es una instancia de la clase Location del dominio,
-  // convertimos sus propiedades a JSON plano:
   if (typeof locationData.toJSON === 'function') {
     locationData = locationData.toJSON();
   }

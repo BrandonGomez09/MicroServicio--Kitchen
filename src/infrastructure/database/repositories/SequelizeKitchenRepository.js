@@ -1,51 +1,95 @@
-const IKitchenRepository = require('../../../domain/repositories/IKitchenRepository');
-const KitchenModel = require('../models/KitchenModel');
-const Kitchen = require('../../../domain/entities/Kitchen');
+const Kitchen = require('../models/KitchenModel');
+const Location = require('../models/LocationModel');
+const KitchenResponsible = require('../models/KitchenResponsibleModel');
 
-class SequelizeKitchenRepository extends IKitchenRepository {
-  
-  _toDomain(sequelizeKitchen) {
-    if (!sequelizeKitchen) return null;
-    return new Kitchen(sequelizeKitchen.toJSON());
-  }
+class SequelizeKitchenRepository {
 
-  async create(kitchenData) {
-    const newKitchen = await KitchenModel.create({
-        name: kitchenData.name,
-        description: kitchenData.description,
-        owner_id: kitchenData.owner_id,
-        location_id: kitchenData.location_id,
-        contact_phone: kitchenData.contact_phone,
-        contact_email: kitchenData.contact_email,
-        approval_status: 'pending',
-        is_active: false,
-        registration_date: new Date()
-    });
-    return this._toDomain(newKitchen);
-  }
-
-  async update(id, kitchenData) {
-    await KitchenModel.update(kitchenData, {
-      where: { id: id },
-    });
-    return this.findById(id);
-  }
-
+  // =======================
+  // Obtener cocina por ID
+  // =======================
   async findById(id) {
-    const kitchen = await KitchenModel.findByPk(id);
-    return this._toDomain(kitchen);
-  }
-
-  async findByStatus(status) {
-    const kitchens = await KitchenModel.findAll({
-      where: { approval_status: status },
+    return await Kitchen.findOne({
+      where: { id },
+      include: [
+        {
+          model: KitchenResponsible,
+          as: 'responsible',
+          attributes: [
+            'names',
+            'first_last_name',
+            'second_last_name',
+            'email',
+            'phone_number',
+            'password_hash'
+          ]
+        },
+        {
+          model: Location,
+          as: 'location'
+        }
+      ]
     });
-    return kitchens.map(this._toDomain);
   }
 
-  async findAll() {
-    const kitchens = await KitchenModel.findAll();
-    return kitchens.map(this._toDomain);
+  // =======================
+  // Crear cocina
+  // =======================
+  async create(data) {
+    return await Kitchen.create(data);
+  }
+
+  // =======================
+  // Guardar cambios
+  // =======================
+  async save(instance) {
+    return await instance.save();
+  }
+
+  // =======================
+  // PENDIENTES
+  // =======================
+  async findPending() {
+    return await Kitchen.findAll({
+      where: { approval_status: 'pending' },
+      include: [
+        {
+          model: KitchenResponsible,
+          as: 'responsible',
+          attributes: [
+            'names',
+            'first_last_name',
+            'second_last_name',
+            'email',
+            'phone_number'
+          ]
+        },
+        {
+          model: Location,
+          as: 'location'
+        }
+      ],
+      order: [['id', 'ASC']]
+    });
+  }
+
+  // =======================
+  // APROBADAS
+  // =======================
+  async findApproved() {
+    return await Kitchen.findAll({
+      where: { approval_status: 'approved' },
+      include: [{ model: Location, as: 'location' }]
+    });
+  }
+
+  // =======================
+  // RECHAZADAS
+  // =======================
+  async findRejected() {
+    return await Kitchen.findAll({
+      where: { approval_status: 'rejected' },
+      include: [{ model: Location, as: 'location' }]
+    });
   }
 }
 
