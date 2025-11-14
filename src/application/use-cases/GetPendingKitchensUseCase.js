@@ -4,8 +4,7 @@ class GetPendingKitchensUseCase {
   }
 
   async execute() {
-    const pendingKitchens = await this.kitchenRepository.findByStatus('pending');
-    return pendingKitchens;
+    return await this.kitchenRepository.findPending();
   }
 }
 

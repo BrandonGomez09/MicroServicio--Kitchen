@@ -2,6 +2,9 @@ require('dotenv').config();
 const app = require('./app');
 const sequelize = require('./infrastructure/database/config/database');
 const publisher = require('./infrastructure/adapters/RabbitMQPublisher');
+require('./infrastructure/database/models/LocationModel');
+require('./infrastructure/database/models/KitchenModel');
+
 
 const PORT = process.env.PORT || 3004;
 
