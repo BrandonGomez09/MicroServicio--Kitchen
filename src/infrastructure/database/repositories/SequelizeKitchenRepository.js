@@ -5,16 +5,56 @@ const LocationModel = require('../models/LocationModel');
 const Kitchen = require('../../../domain/entities/Kitchen');
 
 class SequelizeKitchenRepository {
-
   _toDomain(model) {
     if (!model) return null;
 
     const json = model.toJSON();
 
+    const responsible = json.responsible
+      ? {
+          id: json.responsible.id,
+          kitchenId: json.responsible.kitchen_id,
+          names: json.responsible.names,
+          firstLastName: json.responsible.first_last_name,
+          secondLastName: json.responsible.second_last_name,
+          email: json.responsible.email,
+          phoneNumber: json.responsible.phone_number
+        }
+      : null;
+
+    const location = json.location
+      ? {
+          id: json.location.id,
+          name: json.location.name,
+          streetAddress: json.location.street_address,
+          neighborhood: json.location.neighborhood,
+          stateId: json.location.state_id,
+          municipalityId: json.location.municipality_id,
+          postalCode: json.location.postal_code,
+          capacity: json.location.capacity,
+          contactPhone: json.location.contact_phone,
+          contactEmail: json.location.contact_email,
+          isActive: json.location.is_active
+        }
+      : null;
+
     return new Kitchen({
-      ...json,
-      responsible: json.responsible || null,
-      location: json.location || null
+      id: json.id,
+      name: json.name,
+      description: json.description,
+      owner_id: json.owner_id,
+      location_id: json.location_id,
+      contact_phone: json.contact_phone,
+      contact_email: json.contact_email,
+      image_url: json.image_url,
+      registration_date: json.registration_date,
+      approval_status: json.approval_status,
+      approved_by: json.approved_by,
+      approval_date: json.approval_date,
+      rejection_reason: json.rejection_reason,
+      is_active: json.is_active,
+      responsible,
+      location
     });
   }
 
@@ -31,7 +71,15 @@ class SequelizeKitchenRepository {
       is_active: false
     });
 
-    return this._toDomain(newKitchen);
+    const created = await KitchenModel.findOne({
+      where: { id: newKitchen.id },
+      include: [
+        { model: KitchenResponsibleModel, as: 'responsible' },
+        { model: LocationModel, as: 'location' }
+      ]
+    });
+
+    return this._toDomain(created);
   }
 
   async findById(id) {

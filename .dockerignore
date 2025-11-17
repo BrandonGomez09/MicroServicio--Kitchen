@@ -1,9 +1,0 @@
-# Ignorar la carpeta de módulos de Node (se instalan en el contenedor)
-node_modules
-
-# Ignorar el archivo .env (los secretos se pasan de otra forma)
-.env
-
-# Archivos de sistema operativo y logs
-.DS_Store
-npm-debug.log

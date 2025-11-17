@@ -4,7 +4,8 @@ class GetPendingKitchensUseCase {
   }
 
   async execute() {
-    return await this.kitchenRepository.findPending();
+    const kitchens = await this.kitchenRepository.findPending();
+    return kitchens.map(k => k.toJSON());
   }
 }
 
