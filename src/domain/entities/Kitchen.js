@@ -3,37 +3,71 @@ class Kitchen {
     id,
     name,
     description,
+    ownerId,
     owner_id,
+    locationId,
     location_id,
+    contactPhone,
     contact_phone,
+    contactEmail,
     contact_email,
-    image_url = null,
+    imageUrl,
+    image_url,
+    registrationDate,
     registration_date,
-    approval_status = 'pending',
-    approved_by = null,
-    approval_date = null,
-    rejection_reason = null,
-    is_active = false,
+    approvalStatus,
+    approval_status,
+    approvedBy,
+    approved_by,
+    approvalDate,
+    approval_date,
+    rejectionReason,
+    rejection_reason,
+    isActive,
+    is_active,
     responsible = null,
     location = null
   }) {
     this.id = id;
     this.name = name;
     this.description = description;
-    this.owner_id = owner_id;
-    this.location_id = location_id;
-    this.contact_phone = contact_phone;
-    this.contact_email = contact_email;
-    this.image_url = image_url;
-    this.registration_date = registration_date;
-    this.approval_status = approval_status;
-    this.approved_by = approved_by;
-    this.approval_date = approval_date;
-    this.rejection_reason = rejection_reason;
-    this.is_active = is_active;
+
+    this.ownerId = ownerId ?? owner_id ?? 0;
+    this.locationId = locationId ?? location_id ?? null;
+    this.contactPhone = contactPhone ?? contact_phone ?? null;
+    this.contactEmail = contactEmail ?? contact_email ?? null;
+    this.imageUrl = imageUrl ?? image_url ?? null;
+
+    this.registrationDate = registrationDate ?? registration_date ?? new Date();
+    this.approvalStatus = approvalStatus ?? approval_status ?? 'pending';
+    this.approvedBy = approvedBy ?? approved_by ?? null;
+    this.approvalDate = approvalDate ?? approval_date ?? null;
+    this.rejectionReason = rejectionReason ?? rejection_reason ?? null;
+    this.isActive = isActive ?? is_active ?? false;
 
     this.responsible = responsible;
     this.location = location;
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      description: this.description,
+      ownerId: this.ownerId,
+      locationId: this.locationId,
+      contactPhone: this.contactPhone,
+      contactEmail: this.contactEmail,
+      imageUrl: this.imageUrl,
+      registrationDate: this.registrationDate,
+      approvalStatus: this.approvalStatus,
+      approvedBy: this.approvedBy,
+      approvalDate: this.approvalDate,
+      rejectionReason: this.rejectionReason,
+      isActive: this.isActive,
+      responsible: this.responsible,
+      location: this.location
+    };
   }
 }
 
