@@ -1,52 +1,38 @@
-const bcrypt = require('bcrypt');
+const { saveTemporaryPassword } = require("../../infrastructure/store/temp-password.store");
 
 class RequestKitchenUseCase {
-  constructor(kitchenRepository, locationRepository, responsibleRepository, eventPublisher) {
+  constructor(kitchenRepository, locationRepository, responsibleRepository) {
     this.kitchenRepository = kitchenRepository;
     this.locationRepository = locationRepository;
     this.responsibleRepository = responsibleRepository;
-    this.eventPublisher = eventPublisher;
   }
 
-  async execute({ responsible, kitchen, location }) {
+  async execute(data) {
+    const { responsible, kitchen, location } = data;
 
-    const newLocation = await this.locationRepository.create({
-      name: kitchen.name,
-      streetAddress: location.streetAddress,
-      neighborhood: location.neighborhood,
-      stateId: location.stateId,
-      municipalityId: location.municipalityId,
-      postalCode: location.postalCode,
-      contactPhone: kitchen.contactPhone,
-      contactEmail: kitchen.contactEmail,
-      is_active: true
+    if (!responsible.password) {
+      throw new Error("Password is required for the responsible user.");
+    }
+
+    const locationCreated = await this.locationRepository.create(location);
+
+    const kitchenCreated = await this.kitchenRepository.create({
+      ...kitchen,
+      location_id: locationCreated.id
     });
-
-    const newKitchen = await this.kitchenRepository.create({
-      name: kitchen.name,
-      description: kitchen.description,
-      owner_id: 0,
-      location_id: newLocation.id,
-      contact_phone: kitchen.contactPhone,
-      contact_email: kitchen.contactEmail,
-      image_url: kitchen.image_url || null,
-      approval_status: 'pending',
-      is_active: false
-    });
-
-    const passwordHash = await bcrypt.hash(responsible.password, 10);
 
     await this.responsibleRepository.create({
-      kitchen_id: newKitchen.id,
+      kitchen_id: kitchenCreated.id,
       names: responsible.names,
       first_last_name: responsible.firstLastName,
       second_last_name: responsible.secondLastName,
       email: responsible.email,
-      phone_number: responsible.phoneNumber,
-      password_hash: passwordHash
+      phone_number: responsible.phoneNumber
     });
 
-    return newKitchen;
+    saveTemporaryPassword(kitchenCreated.id, responsible.password);
+
+    return kitchenCreated;
   }
 }
 

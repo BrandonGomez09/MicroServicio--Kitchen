@@ -11,10 +11,13 @@ class IKitchenRepository {
     throw new Error('Método "findById" no implementado');
   }
 
+  async findOwnerIdByKitchenId(id) {
+    throw new Error('Método "findOwnerIdByKitchenId" no implementado');
+  }
+
   async findPending() {
     throw new Error('Método "findPending" no implementado');
   }
-
 
   async findApproved() {
     throw new Error('Método "findApproved" no implementado');

@@ -1,6 +1,7 @@
 const SequelizeKitchenRepository = require('../../database/repositories/SequelizeKitchenRepository');
 const SequelizeLocationRepository = require('../../database/repositories/SequelizeLocationRepository');
 const SequelizeKitchenResponsibleRepository = require('../../database/repositories/SequelizeKitchenResponsibleRepository');
+const SequelizeKitchenScheduleRepository = require('../../database/repositories/SequelizeKitchenScheduleRepository');
 
 const RequestKitchenUseCase = require('../../../application/use-cases/RequestKitchenUseCase');
 const ApproveKitchenUseCase = require('../../../application/use-cases/ApproveKitchenUseCase');
@@ -13,11 +14,16 @@ const GetRejectedKitchensUseCase = require('../../../application/use-cases/GetRe
 const GetNearbyKitchensUseCase = require('../../../application/use-cases/GetNearbyKitchensUseCase');
 const GetKitchenDetailsUseCase = require('../../../application/use-cases/GetKitchenDetailsUseCase');
 
+const CreateKitchenScheduleUseCase = require('../../../application/use-cases/CreateKitchenScheduleUseCase');
+const UpdateKitchenScheduleUseCase = require('../../../application/use-cases/UpdateKitchenScheduleUseCase');
+const GetKitchenScheduleUseCase = require('../../../application/use-cases/GetKitchenScheduleUseCase');
+
 const RabbitMQPublisher = require('../../adapters/RabbitMQPublisher');
 
 const kitchenRepository = new SequelizeKitchenRepository();
 const locationRepository = new SequelizeLocationRepository();
 const responsibleRepository = new SequelizeKitchenResponsibleRepository();
+const scheduleRepository = new SequelizeKitchenScheduleRepository();
 
 module.exports = {
   requestKitchenUseCase: new RequestKitchenUseCase(
@@ -51,5 +57,9 @@ module.exports = {
     kitchenRepository,
     locationRepository,
     responsibleRepository
-  )
+  ),
+
+  createKitchenScheduleUseCase: new CreateKitchenScheduleUseCase(scheduleRepository),
+  updateKitchenScheduleUseCase: new UpdateKitchenScheduleUseCase(scheduleRepository),
+  getKitchenScheduleUseCase: new GetKitchenScheduleUseCase(scheduleRepository)
 };

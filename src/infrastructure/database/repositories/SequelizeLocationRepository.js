@@ -9,7 +9,6 @@ class SequelizeLocationRepository {
   }
 
   async create(locationData) {
-
     console.log("📍 Datos recibidos en create(Location):", locationData);
 
     const newLocation = await LocationModel.create({
@@ -19,8 +18,6 @@ class SequelizeLocationRepository {
       state_id: locationData.stateId,
       municipality_id: locationData.municipalityId,
       postal_code: locationData.postalCode,
-      contact_phone: locationData.contactPhone,
-      contact_email: locationData.contactEmail,
       is_active: true
     });
 
