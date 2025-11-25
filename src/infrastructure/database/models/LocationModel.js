@@ -11,15 +11,13 @@ const Location = sequelize.define(
     state_id: { type: DataTypes.INTEGER, allowNull: false },
     municipality_id: { type: DataTypes.INTEGER, allowNull: false },
     postal_code: { type: DataTypes.STRING, allowNull: false },
-    capacity: { type: DataTypes.INTEGER, allowNull: true },
-    contact_phone: { type: DataTypes.STRING, allowNull: false },
-    contact_email: { type: DataTypes.STRING, allowNull: false },
     is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
   },
   {
-    tableName: 'locations',   
+    tableName: 'locations',
     timestamps: false,
   }
 );
+
 
 module.exports = Location;

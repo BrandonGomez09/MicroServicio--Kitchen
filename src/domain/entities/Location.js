@@ -7,8 +7,6 @@ class Location {
     stateId, 
     municipalityId, 
     postalCode, 
-    contactPhone, 
-    contactEmail, 
     is_active 
   }) {
     this.id = id; 
@@ -18,8 +16,6 @@ class Location {
     this.stateId = stateId;
     this.municipalityId = municipalityId;
     this.postalCode = postalCode;
-    this.contactPhone = contactPhone;
-    this.contactEmail = contactEmail;
     this.is_active = is_active ?? true;
   }
 
@@ -32,8 +28,6 @@ class Location {
       stateId: this.stateId,
       municipalityId: this.municipalityId,
       postalCode: this.postalCode,
-      contactPhone: this.contactPhone,
-      contactEmail: this.contactEmail,
       is_active: this.is_active
     };
   }

@@ -6,7 +6,8 @@ const {
   getApprovedKitchensUseCase,
   getRejectedKitchensUseCase,
   getNearbyKitchensUseCase,
-  getKitchenDetailsUseCase
+  getKitchenDetailsUseCase,
+  updateKitchenInfoUseCase
 } = require('../dependencies/dependencies');
 
 class KitchenController {
@@ -16,7 +17,11 @@ class KitchenController {
       const result = await requestKitchenUseCase.execute(req.body);
       res.status(201).json({ success: true, data: result });
     } catch (err) {
-      res.status(500).json({ success: false, message: "Error al registrar cocina", error: err.message });
+      res.status(500).json({
+        success: false,
+        message: "Error al registrar cocina",
+        error: err.message
+      });
     }
   }
 
@@ -33,7 +38,10 @@ class KitchenController {
     try {
       const { stateId, municipalityId } = req.user;
 
-      const kitchens = await getNearbyKitchensUseCase.execute({ stateId, municipalityId });
+      const kitchens = await getNearbyKitchensUseCase.execute({
+        stateId,
+        municipalityId
+      });
 
       res.status(200).json({ success: true, data: kitchens });
     } catch (err) {
@@ -61,8 +69,10 @@ class KitchenController {
 
   async approveKitchen(req, res) {
     try {
-      const data = await approveKitchenUseCase.execute(req.params.id);
-      res.status(200).json({ success: true, data });
+      const kitchenId = req.params.id;
+      const result = await approveKitchenUseCase.execute(kitchenId);
+
+      res.status(200).json({ success: true, data: result });
     } catch (err) {
       res.status(err.http_status || 500).json({
         success: false,
@@ -74,8 +84,12 @@ class KitchenController {
 
   async rejectKitchen(req, res) {
     try {
-      const data = await rejectKitchenUseCase.execute(req.params.id, req.body.reason);
-      res.status(200).json({ success: true, data });
+      const kitchenId = req.params.id;
+      const reason = req.body.reason;
+
+      const result = await rejectKitchenUseCase.execute(kitchenId, reason);
+
+      res.status(200).json({ success: true, data: result });
     } catch (err) {
       res.status(err.http_status || 500).json({
         success: false,
@@ -85,9 +99,36 @@ class KitchenController {
     }
   }
 
+  async updateKitchen(req, res) {
+    try {
+      const adminUserId = req.user.id;
+      const kitchenId = req.params.id;
+      const updates = req.body;
+
+      const updatedKitchen = await updateKitchenInfoUseCase.execute(
+        adminUserId,
+        kitchenId,
+        updates
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Cocina actualizada correctamente",
+        data: updatedKitchen
+      });
+    } catch (err) {
+      res.status(err.http_status || 500).json({
+        success: false,
+        message: err.message || "Error al actualizar la cocina"
+      });
+    }
+  }
+
   async getKitchenDetails(req, res) {
     try {
-      const data = await getKitchenDetailsUseCase.execute(req.params.id);
+      const kitchenId = req.params.id;
+      const data = await getKitchenDetailsUseCase.execute(kitchenId);
+
       res.status(200).json({ success: true, data });
     } catch (err) {
       res.status(err.http_status || 500).json({

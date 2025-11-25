@@ -6,7 +6,7 @@ require('./infrastructure/database/models/LocationModel');
 require('./infrastructure/database/models/KitchenModel');
 
 
-const PORT = process.env.PORT || 3004;
+const PORT = process.env.PORT;
 
 async function startServer() {
   try {

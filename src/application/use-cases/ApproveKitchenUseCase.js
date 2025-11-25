@@ -1,3 +1,5 @@
+const { getTemporaryPassword, clearTemporaryPassword } = require("../../infrastructure/store/temp-password.store");
+
 class ApproveKitchenUseCase {
   constructor(kitchenRepository, responsibleRepository, eventPublisher) {
     this.kitchenRepository = kitchenRepository;
@@ -7,26 +9,31 @@ class ApproveKitchenUseCase {
 
   async execute(kitchenId) {
     const kitchen = await this.kitchenRepository.findById(kitchenId);
-
-    if (!kitchen) {
-      throw { http_status: 404, message: "Kitchen not found" };
-    }
+    if (!kitchen) throw { http_status: 404, message: "Kitchen not found" };
 
     const responsible = await this.responsibleRepository.findByKitchenId(kitchenId);
+    if (!responsible) throw { http_status: 500, message: "Kitchen responsible not found" };
 
-    if (!responsible) {
-      throw { http_status: 400, message: "Kitchen has no responsible user data" };
-    }
+    const password = getTemporaryPassword(kitchenId);
+    if (!password) throw { http_status: 500, message: "Temporary password missing" };
 
-    const updated = await this.kitchenRepository.update(kitchenId, {
-      approval_status: "approved",
-      is_active: true,
-      approved_by: responsible.id,
-      approval_date: new Date(),
-      rejection_reason: null
+    kitchen.approvalStatus = "approved";
+    kitchen.isActive = true;
+
+    const updatedKitchen = await this.kitchenRepository.update(kitchenId, kitchen);
+
+    await this.eventPublisher.publish("kitchen.admin.registered", {
+      names: responsible.names,
+      firstLastName: responsible.firstLast_name,
+      secondLastName: responsible.secondLast_name,
+      email: responsible.email,
+      phoneNumber: responsible.phone_number,
+      password
     });
 
-    return updated;
+    clearTemporaryPassword(kitchenId);
+
+    return updatedKitchen;
   }
 }
 

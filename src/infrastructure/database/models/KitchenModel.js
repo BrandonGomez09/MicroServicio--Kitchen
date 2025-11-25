@@ -1,6 +1,8 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database'); 
+
 const Location = require('./LocationModel');
+const KitchenSchedule = require('./KitchenScheduleModel'); // ← NUEVO
 
 const Kitchen = sequelize.define(
   'Kitchen',
@@ -13,10 +15,7 @@ const Kitchen = sequelize.define(
     location_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'locations',  
-        key: 'id',
-      },
+      references: { model: 'locations', key: 'id' },
     },
 
     contact_phone: { type: DataTypes.STRING, allowNull: false },
@@ -35,12 +34,22 @@ const Kitchen = sequelize.define(
     is_active: { type: DataTypes.BOOLEAN, defaultValue: false }
   },
   {
-    tableName: 'kitchens',     
+    tableName: 'kitchens',
     timestamps: false,
   }
 );
 
 Kitchen.belongsTo(Location, { foreignKey: 'location_id', as: 'location' });
 Location.hasMany(Kitchen, { foreignKey: 'location_id', as: 'kitchens' });
+
+Kitchen.hasOne(KitchenSchedule, {
+  foreignKey: 'kitchen_id',
+  as: 'schedule'
+});
+
+KitchenSchedule.belongsTo(Kitchen, {
+  foreignKey: 'kitchen_id',
+  as: 'kitchen'
+});
 
 module.exports = Kitchen;
