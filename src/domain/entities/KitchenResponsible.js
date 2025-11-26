@@ -1,15 +1,24 @@
 class KitchenResponsible {
-  constructor(data) {
-    this.id = data.id;
-    this.kitchenId = data.kitchenId ?? data.kitchen_id;
-    this.names = data.names;
-    this.firstLastName = data.firstLastName ?? data.first_last_name;
-    this.secondLastName = data.secondLastName ?? data.second_last_name;
-    this.email = data.email;
-    this.phoneNumber = data.phoneNumber ?? data.phone_number;
-    this.password = data.password ?? null;
-
-    this.createdAt = data.createdAt ?? data.created_at ?? null;
+  constructor({
+    id,
+    kitchenId,
+    names,
+    firstLastName,
+    secondLastName,
+    email,
+    phoneNumber,
+    createdAt,
+    password 
+  }) {
+    this.id = id;
+    this.kitchenId = kitchenId;
+    this.names = names;
+    this.firstLastName = firstLastName;
+    this.secondLastName = secondLastName;
+    this.email = email;
+    this.phoneNumber = phoneNumber;
+    this.createdAt = createdAt ?? new Date();
+    this.password = password ?? null;
   }
 
   toJSON() {
@@ -21,8 +30,8 @@ class KitchenResponsible {
       secondLastName: this.secondLastName,
       email: this.email,
       phoneNumber: this.phoneNumber,
-      password: this.password,
-      createdAt: this.createdAt
+      createdAt: this.createdAt,
+      password: this.password 
     };
   }
 }

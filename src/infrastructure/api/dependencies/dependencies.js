@@ -18,7 +18,7 @@ const CreateKitchenScheduleUseCase = require('../../../application/use-cases/Cre
 const UpdateKitchenScheduleUseCase = require('../../../application/use-cases/UpdateKitchenScheduleUseCase');
 const GetKitchenScheduleUseCase = require('../../../application/use-cases/GetKitchenScheduleUseCase');
 
-const RabbitMQPublisher = require('../../adapters/RabbitMQPublisher');
+const rabbitMQPublisher = require('../../adapters/RabbitMQPublisher');
 
 const kitchenRepository = new SequelizeKitchenRepository();
 const locationRepository = new SequelizeLocationRepository();
@@ -29,19 +29,18 @@ module.exports = {
   requestKitchenUseCase: new RequestKitchenUseCase(
     kitchenRepository,
     locationRepository,
-    responsibleRepository,
-    RabbitMQPublisher
+    responsibleRepository
   ),
 
   approveKitchenUseCase: new ApproveKitchenUseCase(
     kitchenRepository,
     responsibleRepository,
-    RabbitMQPublisher
+    rabbitMQPublisher
   ),
 
   rejectKitchenUseCase: new RejectKitchenUseCase(
     kitchenRepository,
-    RabbitMQPublisher
+    rabbitMQPublisher
   ),
 
   getPendingKitchensUseCase: new GetPendingKitchensUseCase(kitchenRepository),
@@ -55,11 +54,16 @@ module.exports = {
 
   getKitchenDetailsUseCase: new GetKitchenDetailsUseCase(
     kitchenRepository,
-    locationRepository,
-    responsibleRepository
+    locationRepository
   ),
 
-  createKitchenScheduleUseCase: new CreateKitchenScheduleUseCase(scheduleRepository),
-  updateKitchenScheduleUseCase: new UpdateKitchenScheduleUseCase(scheduleRepository),
-  getKitchenScheduleUseCase: new GetKitchenScheduleUseCase(scheduleRepository)
+  createKitchenScheduleUseCase: new CreateKitchenScheduleUseCase(
+    scheduleRepository
+  ),
+  updateKitchenScheduleUseCase: new UpdateKitchenScheduleUseCase(
+    scheduleRepository
+  ),
+  getKitchenScheduleUseCase: new GetKitchenScheduleUseCase(
+    scheduleRepository
+  )
 };

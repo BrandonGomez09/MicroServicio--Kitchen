@@ -1,40 +1,25 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const KitchenScheduleModel = sequelize.define(
+const KitchenSchedule = sequelize.define(
   'KitchenSchedule',
   {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
 
-    kitchen_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
+    kitchenId: { type: DataTypes.INTEGER, allowNull: false },
 
-    open_time_weekdays: {
-      type: DataTypes.TIME,
-      allowNull: false,
-    },
-    close_time_weekdays: {
-      type: DataTypes.TIME,
-      allowNull: false,
-    },
+    openTimeWeekdays: { type: DataTypes.TIME, allowNull: false },
+    closeTimeWeekdays: { type: DataTypes.TIME, allowNull: false },
 
-    open_time_weekends: {
-      type: DataTypes.TIME,
-      allowNull: false,
-    },
-    close_time_weekends: {
-      type: DataTypes.TIME,
-      allowNull: false,
-    },
+    openTimeWeekends: { type: DataTypes.TIME, allowNull: false },
+    closeTimeWeekends: { type: DataTypes.TIME, allowNull: false },
 
-    is_active: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
-    }
+    isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
   },
-  { tableName: 'kitchen_schedules', timestamps: false }
+  {
+    tableName: 'kitchenSchedules',
+    timestamps: false
+  }
 );
 
-module.exports = KitchenScheduleModel;
+module.exports = KitchenSchedule;

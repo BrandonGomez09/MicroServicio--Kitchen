@@ -1,44 +1,35 @@
-const LocationModel = require('../models/LocationModel');
-const Location = require('../../../domain/entities/Location');
+const LocationModel = require("../models/LocationModel");
+const Location = require("../../../domain/entities/Location");
 
 class SequelizeLocationRepository {
-
   _toDomain(model) {
     if (!model) return null;
     return new Location(model.toJSON());
   }
 
-  async create(locationData) {
-    console.log("📍 Datos recibidos en create(Location):", locationData);
-
+  async create(data) {
     const newLocation = await LocationModel.create({
-      name: locationData.name || locationData.neighborhood || 'Ubicación sin nombre',
-      street_address: locationData.streetAddress,
-      neighborhood: locationData.neighborhood,
-      state_id: locationData.stateId,
-      municipality_id: locationData.municipalityId,
-      postal_code: locationData.postalCode,
-      is_active: true
+      streetAddress: data.streetAddress,
+      neighborhood: data.neighborhood,
+      stateId: data.stateId,
+      municipalityId: data.municipalityId,
+      postalCode: data.postalCode
     });
 
     return this._toDomain(newLocation);
   }
 
   async findById(id) {
-    const record = await LocationModel.findByPk(id);
-    return this._toDomain(record);
+    const model = await LocationModel.findByPk(id);
+    return this._toDomain(model);
   }
 
   async findByStateAndMunicipality(stateId, municipalityId) {
-    const results = await LocationModel.findAll({
-      where: {
-        state_id: stateId,
-        municipality_id: municipalityId,
-        is_active: true
-      }
+    const models = await LocationModel.findAll({
+      where: { stateId, municipalityId, isActive: true }
     });
 
-    return results.map(r => this._toDomain(r));
+    return models.map(m => this._toDomain(m));
   }
 }
 

@@ -7,32 +7,33 @@ class RequestKitchenUseCase {
     this.responsibleRepository = responsibleRepository;
   }
 
-  async execute(data) {
-    const { responsible, kitchen, location } = data;
+  async execute(dto) {
+    const { responsible, kitchen, location } = dto;
 
     if (!responsible.password) {
-      throw new Error("Password is required for the responsible user.");
+      throw { http_status: 400, message: "Password is required" };
     }
 
-    const locationCreated = await this.locationRepository.create(location);
+    const createdLocation = await this.locationRepository.create(location);
 
-    const kitchenCreated = await this.kitchenRepository.create({
+    const createdKitchen = await this.kitchenRepository.create({
       ...kitchen,
-      location_id: locationCreated.id
+      ownerId: 0,
+      locationId: createdLocation.id
     });
 
     await this.responsibleRepository.create({
-      kitchen_id: kitchenCreated.id,
+      kitchenId: createdKitchen.id,
       names: responsible.names,
-      first_last_name: responsible.firstLastName,
-      second_last_name: responsible.secondLastName,
+      firstLastName: responsible.firstLastName,
+      secondLastName: responsible.secondLastName,
       email: responsible.email,
-      phone_number: responsible.phoneNumber
+      phoneNumber: responsible.phoneNumber
     });
 
-    saveTemporaryPassword(kitchenCreated.id, responsible.password);
+    saveTemporaryPassword(createdKitchen.id, responsible.password);
 
-    return kitchenCreated;
+    return createdKitchen;
   }
 }
 

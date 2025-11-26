@@ -1,5 +1,4 @@
 class GetNearbyKitchensUseCase {
-
   constructor(kitchenRepository, locationRepository) {
     this.kitchenRepository = kitchenRepository;
     this.locationRepository = locationRepository;
@@ -13,9 +12,7 @@ class GetNearbyKitchensUseCase {
 
     const ids = locations.map(l => l.id);
 
-    const kitchens = await this.kitchenRepository.findByLocationIds(ids);
-
-    return kitchens;
+    return await this.kitchenRepository.findByLocationIds(ids);
   }
 }
 

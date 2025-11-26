@@ -11,16 +11,21 @@ const {
 } = require('../dependencies/dependencies');
 
 class KitchenController {
-
   async requestKitchen(req, res) {
     try {
       const result = await requestKitchenUseCase.execute(req.body);
-      res.status(201).json({ success: true, data: result });
+
+      res.status(201).json({
+        success: true,
+        data: result
+      });
     } catch (err) {
+      console.error('❌ Error en requestKitchen:', err);
+
       res.status(500).json({
         success: false,
-        message: "Error al registrar cocina",
-        error: err.message
+        message: 'Error al registrar cocina',
+        error: err.message || String(err)
       });
     }
   }
@@ -30,7 +35,28 @@ class KitchenController {
       const data = await getPendingKitchensUseCase.execute();
       res.status(200).json({ success: true, data });
     } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
+      console.error('❌ Error en getPendingKitchens:', err);
+      res.status(500).json({ success: false, error: err.message || String(err) });
+    }
+  }
+
+  async getApprovedKitchens(_req, res) {
+    try {
+      const data = await getApprovedKitchensUseCase.execute();
+      res.status(200).json({ success: true, data });
+    } catch (err) {
+      console.error('❌ Error en getApprovedKitchens:', err);
+      res.status(500).json({ success: false, error: err.message || String(err) });
+    }
+  }
+
+  async getRejectedKitchens(_req, res) {
+    try {
+      const data = await getRejectedKitchensUseCase.execute();
+      res.status(200).json({ success: true, data });
+    } catch (err) {
+      console.error('❌ Error en getRejectedKitchens:', err);
+      res.status(500).json({ success: false, error: err.message || String(err) });
     }
   }
 
@@ -45,25 +71,8 @@ class KitchenController {
 
       res.status(200).json({ success: true, data: kitchens });
     } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  }
-
-  async getApprovedKitchens(_req, res) {
-    try {
-      const data = await getApprovedKitchensUseCase.execute();
-      res.status(200).json({ success: true, data });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  }
-
-  async getRejectedKitchens(_req, res) {
-    try {
-      const data = await getRejectedKitchensUseCase.execute();
-      res.status(200).json({ success: true, data });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
+      console.error('❌ Error en getNearbyKitchens:', err);
+      res.status(500).json({ success: false, error: err.message || String(err) });
     }
   }
 
@@ -74,10 +83,12 @@ class KitchenController {
 
       res.status(200).json({ success: true, data: result });
     } catch (err) {
+      console.error('❌ Error en approveKitchen:', err);
+
       res.status(err.http_status || 500).json({
         success: false,
-        message: "Error al aprobar cocina",
-        error: err.message
+        message: 'Error al aprobar cocina',
+        error: err.message || String(err)
       });
     }
   }
@@ -86,15 +97,22 @@ class KitchenController {
     try {
       const kitchenId = req.params.id;
       const reason = req.body.reason;
+      const adminUserId = req.user?.id || null;
 
-      const result = await rejectKitchenUseCase.execute(kitchenId, reason);
+      const result = await rejectKitchenUseCase.execute(
+        kitchenId,
+        reason,
+        adminUserId
+      );
 
       res.status(200).json({ success: true, data: result });
     } catch (err) {
+      console.error('❌ Error en rejectKitchen:', err);
+
       res.status(err.http_status || 500).json({
         success: false,
-        message: "Error al rechazar cocina",
-        error: err.message
+        message: 'Error al rechazar cocina',
+        error: err.message || String(err)
       });
     }
   }
@@ -113,13 +131,15 @@ class KitchenController {
 
       res.status(200).json({
         success: true,
-        message: "Cocina actualizada correctamente",
+        message: 'Cocina actualizada correctamente',
         data: updatedKitchen
       });
     } catch (err) {
+      console.error('❌ Error en updateKitchen:', err);
+
       res.status(err.http_status || 500).json({
         success: false,
-        message: err.message || "Error al actualizar la cocina"
+        message: err.message || 'Error al actualizar la cocina'
       });
     }
   }
@@ -131,10 +151,12 @@ class KitchenController {
 
       res.status(200).json({ success: true, data });
     } catch (err) {
+      console.error('❌ Error en getKitchenDetails:', err);
+
       res.status(err.http_status || 500).json({
         success: false,
-        message: "Error al obtener detalles de la cocina",
-        error: err.message
+        message: 'Error al obtener detalles de la cocina',
+        error: err.message || String(err)
       });
     }
   }

@@ -1,54 +1,76 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database'); 
+const sequelize = require('../config/database');
 
 const Location = require('./LocationModel');
-const KitchenSchedule = require('./KitchenScheduleModel'); // ← NUEVO
+const KitchenSchedule = require('./KitchenScheduleModel');
+const KitchenResponsible = require('./KitchenResponsibleModel');
 
 const Kitchen = sequelize.define(
   'Kitchen',
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+
     name: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: false },
-    owner_id: { type: DataTypes.INTEGER, allowNull: false },
 
-    location_id: {
+    ownerId: { type: DataTypes.INTEGER, allowNull: false },
+
+    locationId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: { model: 'locations', key: 'id' },
+      references: { model: 'locations', key: 'id' }
     },
 
-    contact_phone: { type: DataTypes.STRING, allowNull: false },
-    contact_email: { type: DataTypes.STRING, allowNull: false },
-    image_url: { type: DataTypes.STRING },
-    registration_date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+    contactPhone: { type: DataTypes.STRING, allowNull: false },
+    contactEmail: { type: DataTypes.STRING, allowNull: false },
+    imageUrl: { type: DataTypes.STRING },
 
-    approval_status: {
+    registrationDate: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+
+    approvalStatus: {
       type: DataTypes.ENUM('pending', 'approved', 'rejected'),
       defaultValue: 'pending'
     },
 
-    approved_by: { type: DataTypes.INTEGER },
-    approval_date: { type: DataTypes.DATE },
-    rejection_reason: { type: DataTypes.TEXT },
-    is_active: { type: DataTypes.BOOLEAN, defaultValue: false }
+    approvedBy: { type: DataTypes.INTEGER },
+    approvalDate: { type: DataTypes.DATE },
+    rejectionReason: { type: DataTypes.TEXT },
+
+    isActive: { type: DataTypes.BOOLEAN, defaultValue: false }
   },
   {
     tableName: 'kitchens',
-    timestamps: false,
+    timestamps: false
   }
 );
 
-Kitchen.belongsTo(Location, { foreignKey: 'location_id', as: 'location' });
-Location.hasMany(Kitchen, { foreignKey: 'location_id', as: 'kitchens' });
+Kitchen.belongsTo(Location, {
+  foreignKey: 'locationId',
+  as: 'location'
+});
+
+Location.hasMany(Kitchen, {
+  foreignKey: 'locationId',
+  as: 'kitchens'
+});
+
+Kitchen.hasOne(KitchenResponsible, {
+  foreignKey: 'kitchenId',
+  as: 'responsible'
+});
+
+KitchenResponsible.belongsTo(Kitchen, {
+  foreignKey: 'kitchenId',
+  as: 'kitchen'
+});
 
 Kitchen.hasOne(KitchenSchedule, {
-  foreignKey: 'kitchen_id',
+  foreignKey: 'kitchenId',
   as: 'schedule'
 });
 
 KitchenSchedule.belongsTo(Kitchen, {
-  foreignKey: 'kitchen_id',
+  foreignKey: 'kitchenId',
   as: 'kitchen'
 });
 
