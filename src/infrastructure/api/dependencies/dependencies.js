@@ -58,12 +58,17 @@ module.exports = {
   ),
 
   createKitchenScheduleUseCase: new CreateKitchenScheduleUseCase(
-    scheduleRepository
+    scheduleRepository,
+    kitchenRepository
   ),
+
   updateKitchenScheduleUseCase: new UpdateKitchenScheduleUseCase(
-    scheduleRepository
+    scheduleRepository,
+    kitchenRepository
   ),
+
   getKitchenScheduleUseCase: new GetKitchenScheduleUseCase(
-    scheduleRepository
+    scheduleRepository,
+    kitchenRepository
   )
 };

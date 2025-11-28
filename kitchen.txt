@@ -61,7 +61,6 @@ Directory structure:
             ├── require-auth.js
             ├── require-kitchen-owner.js
             └── require-role.js
-
 ================================================
 FILE: package.json
 ================================================
@@ -169,7 +168,10 @@ startServer();
 ================================================
 FILE: src/application/use-cases/ApproveKitchenUseCase.js
 ================================================
-const { getTemporaryPassword, clearTemporaryPassword } = require("../../infrastructure/store/temp-password.store");
+const {
+  getTemporaryPassword,
+  clearTemporaryPassword
+} = require("../../infrastructure/store/temp-password.store");
 
 class ApproveKitchenUseCase {
   constructor(kitchenRepository, responsibleRepository, eventPublisher) {
@@ -183,28 +185,30 @@ class ApproveKitchenUseCase {
     if (!kitchen) throw { http_status: 404, message: "Kitchen not found" };
 
     const responsible = await this.responsibleRepository.findByKitchenId(kitchenId);
-    if (!responsible) throw { http_status: 500, message: "Kitchen responsible not found" };
 
     const password = getTemporaryPassword(kitchenId);
-    if (!password) throw { http_status: 500, message: "Temporary password missing" };
+    if (!password) {
+      throw { http_status: 500, message: "Missing password for responsible user" };
+    }
 
-    kitchen.approvalStatus = "approved";
-    kitchen.isActive = true;
-
-    const updatedKitchen = await this.kitchenRepository.update(kitchenId, kitchen);
+    await this.kitchenRepository.update(kitchenId, {
+      approvalStatus: "approved",
+      isActive: true
+    });
 
     await this.eventPublisher.publish("kitchen.admin.registered", {
+      kitchenId,
       names: responsible.names,
-      firstLastName: responsible.firstLast_name,
-      secondLastName: responsible.secondLast_name,
+      firstLastName: responsible.firstLastName,
+      secondLastName: responsible.secondLastName,
       email: responsible.email,
-      phoneNumber: responsible.phone_number,
+      phoneNumber: responsible.phoneNumber,
       password
     });
 
     clearTemporaryPassword(kitchenId);
 
-    return updatedKitchen;
+    return kitchen;
   }
 }
 
@@ -247,8 +251,7 @@ class GetApprovedKitchensUseCase {
   }
 
   async execute() {
-    const approvedKitchens = await this.kitchenRepository.findByStatus('approved');
-    return approvedKitchens;
+    return await this.kitchenRepository.findByStatus("approved");
   }
 }
 
@@ -266,17 +269,17 @@ class GetKitchenDetailsUseCase {
 
   async execute(kitchenId) {
     const kitchen = await this.kitchenRepository.findById(kitchenId);
-    if (!kitchen) throw new Error("Cocina no encontrada");
+    if (!kitchen) throw new Error("Kitchen not found");
 
-    const location = kitchen.location_id
-      ? await this.locationRepository.findById(kitchen.location_id)
+    const location = kitchen.locationId
+      ? await this.locationRepository.findById(kitchen.locationId)
       : null;
 
     return { kitchen, location };
   }
 }
 
-module.exports = GetKitchenDetailsUseCase;  
+module.exports = GetKitchenDetailsUseCase;
 
 
 ================================================
@@ -300,7 +303,6 @@ module.exports = GetKitchenScheduleUseCase;
 FILE: src/application/use-cases/GetNearbyKitchensUseCase.js
 ================================================
 class GetNearbyKitchensUseCase {
-
   constructor(kitchenRepository, locationRepository) {
     this.kitchenRepository = kitchenRepository;
     this.locationRepository = locationRepository;
@@ -314,9 +316,7 @@ class GetNearbyKitchensUseCase {
 
     const ids = locations.map(l => l.id);
 
-    const kitchens = await this.kitchenRepository.findByLocationIds(ids);
-
-    return kitchens;
+    return await this.kitchenRepository.findByLocationIds(ids);
   }
 }
 
@@ -333,7 +333,7 @@ class GetPendingKitchensUseCase {
 
   async execute() {
     const kitchens = await this.kitchenRepository.findPending();
-    return kitchens.map(k => k.toJSON());
+    return kitchens;
   }
 }
 
@@ -343,16 +343,13 @@ module.exports = GetPendingKitchensUseCase;
 ================================================
 FILE: src/application/use-cases/GetRejectedKitchensUseCase.js
 ================================================
-// src/application/use-cases/GetRejectedKitchensUseCase.js
-
 class GetRejectedKitchensUseCase {
   constructor(kitchenRepository) {
     this.kitchenRepository = kitchenRepository;
   }
 
   async execute() {
-    const rejectedKitchens = await this.kitchenRepository.findByStatus('rejected');
-    return rejectedKitchens;
+    return await this.kitchenRepository.findByStatus("rejected");
   }
 }
 
@@ -369,21 +366,20 @@ class RejectKitchenUseCase {
   }
 
   async execute(kitchenId, reason, adminUserId) {
-
     const kitchen = await this.kitchenRepository.findById(kitchenId);
-    if (!kitchen) throw new Error("Cocina no encontrada");
+    if (!kitchen) throw new Error("Kitchen not found");
 
     const updatedKitchen = await this.kitchenRepository.update(kitchenId, {
-      approval_status: "rejected",
-      rejection_reason: reason,
-      is_active: false,
-      approved_by: null,
-      approval_date: null
+      approvalStatus: "rejected",
+      rejectionReason: reason,
+      isActive: false,
+      approvedBy: null,
+      approvalDate: null
     });
 
     await this.eventPublisher.publish("kitchen.rejected", {
       kitchenId: updatedKitchen.id,
-      ownerId: updatedKitchen.owner_id,
+      ownerId: updatedKitchen.ownerId,
       kitchenName: updatedKitchen.name,
       rejectionReason: reason,
       rejectedBy: adminUserId,
@@ -409,32 +405,33 @@ class RequestKitchenUseCase {
     this.responsibleRepository = responsibleRepository;
   }
 
-  async execute(data) {
-    const { responsible, kitchen, location } = data;
+  async execute(dto) {
+    const { responsible, kitchen, location } = dto;
 
     if (!responsible.password) {
-      throw new Error("Password is required for the responsible user.");
+      throw { http_status: 400, message: "Password is required" };
     }
 
-    const locationCreated = await this.locationRepository.create(location);
+    const createdLocation = await this.locationRepository.create(location);
 
-    const kitchenCreated = await this.kitchenRepository.create({
+    const createdKitchen = await this.kitchenRepository.create({
       ...kitchen,
-      location_id: locationCreated.id
+      ownerId: 0,
+      locationId: createdLocation.id
     });
 
     await this.responsibleRepository.create({
-      kitchen_id: kitchenCreated.id,
+      kitchenId: createdKitchen.id,
       names: responsible.names,
-      first_last_name: responsible.firstLastName,
-      second_last_name: responsible.secondLastName,
+      firstLastName: responsible.firstLastName,
+      secondLastName: responsible.secondLastName,
       email: responsible.email,
-      phone_number: responsible.phoneNumber
+      phoneNumber: responsible.phoneNumber
     });
 
-    saveTemporaryPassword(kitchenCreated.id, responsible.password);
+    saveTemporaryPassword(createdKitchen.id, responsible.password);
 
-    return kitchenCreated;
+    return createdKitchen;
   }
 }
 
@@ -496,27 +493,27 @@ class UpdateKitchenInfoUseCase {
     } = data;
 
     const kitchen = await this.kitchenRepository.findById(kitchenId);
-    if (!kitchen) throw { http_status: 404, message: "Cocina no encontrada" };
+    if (!kitchen) throw { http_status: 404, message: "Kitchen not found" };
 
     const ownerId = await this.kitchenRepository.findOwnerIdByKitchenId(kitchenId);
     if (ownerId !== adminUserId) {
-      throw { http_status: 403, message: "No puedes editar una cocina que no te pertenece" };
+      throw { http_status: 403, message: "Not your kitchen" };
     }
 
     await this.locationRepository.update(kitchen.locationId, {
-      street_address: streetAddress,
+      streetAddress,
       neighborhood,
-      postal_code: postalCode,
-      state_id: stateId,
-      municipality_id: municipalityId
+      postalCode,
+      stateId,
+      municipalityId
     });
 
     const updatedKitchen = await this.kitchenRepository.update(kitchenId, {
       name,
       description,
-      contact_phone: contactPhone,
-      contact_email: contactEmail,
-      image_url: imageUrl ?? null
+      contactPhone,
+      contactEmail,
+      imageUrl
     });
 
     return updatedKitchen;
@@ -524,7 +521,6 @@ class UpdateKitchenInfoUseCase {
 }
 
 module.exports = UpdateKitchenInfoUseCase;
-
 
 
 ================================================
@@ -563,46 +559,33 @@ class Kitchen {
     name,
     description,
     ownerId,
-    owner_id,
     locationId,
-    location_id,
     contactPhone,
-    contact_phone,
     contactEmail,
-    contact_email,
     imageUrl,
-    image_url,
     registrationDate,
-    registration_date,
     approvalStatus,
-    approval_status,
     approvedBy,
-    approved_by,
     approvalDate,
-    approval_date,
     rejectionReason,
-    rejection_reason,
     isActive,
-    is_active,
     responsible = null,
     location = null
   }) {
     this.id = id;
     this.name = name;
     this.description = description;
-
-    this.ownerId = ownerId ?? owner_id ?? 0;
-    this.locationId = locationId ?? location_id ?? null;
-    this.contactPhone = contactPhone ?? contact_phone ?? null;
-    this.contactEmail = contactEmail ?? contact_email ?? null;
-    this.imageUrl = imageUrl ?? image_url ?? null;
-
-    this.registrationDate = registrationDate ?? registration_date ?? new Date();
-    this.approvalStatus = approvalStatus ?? approval_status ?? 'pending';
-    this.approvedBy = approvedBy ?? approved_by ?? null;
-    this.approvalDate = approvalDate ?? approval_date ?? null;
-    this.rejectionReason = rejectionReason ?? rejection_reason ?? null;
-    this.isActive = isActive ?? is_active ?? false;
+    this.ownerId = ownerId ?? 0;
+    this.locationId = locationId ?? null;
+    this.contactPhone = contactPhone ?? null;
+    this.contactEmail = contactEmail ?? null;
+    this.imageUrl = imageUrl ?? null;
+    this.registrationDate = registrationDate ?? new Date();
+    this.approvalStatus = approvalStatus ?? "pending";
+    this.approvedBy = approvedBy ?? null;
+    this.approvalDate = approvalDate ?? null;
+    this.rejectionReason = rejectionReason ?? null;
+    this.isActive = isActive ?? false;
 
     this.responsible = responsible;
     this.location = location;
@@ -633,22 +616,30 @@ class Kitchen {
 module.exports = Kitchen;
 
 
-
 ================================================
 FILE: src/domain/entities/KitchenResponsible.js
 ================================================
 class KitchenResponsible {
-  constructor(data) {
-    this.id = data.id;
-    this.kitchenId = data.kitchenId ?? data.kitchen_id;
-    this.names = data.names;
-    this.firstLastName = data.firstLastName ?? data.first_last_name;
-    this.secondLastName = data.secondLastName ?? data.second_last_name;
-    this.email = data.email;
-    this.phoneNumber = data.phoneNumber ?? data.phone_number;
-    this.password = data.password ?? null;
-
-    this.createdAt = data.createdAt ?? data.created_at ?? null;
+  constructor({
+    id,
+    kitchenId,
+    names,
+    firstLastName,
+    secondLastName,
+    email,
+    phoneNumber,
+    createdAt,
+    password 
+  }) {
+    this.id = id;
+    this.kitchenId = kitchenId;
+    this.names = names;
+    this.firstLastName = firstLastName;
+    this.secondLastName = secondLastName;
+    this.email = email;
+    this.phoneNumber = phoneNumber;
+    this.createdAt = createdAt ?? new Date();
+    this.password = password ?? null;
   }
 
   toJSON() {
@@ -660,13 +651,14 @@ class KitchenResponsible {
       secondLastName: this.secondLastName,
       email: this.email,
       phoneNumber: this.phoneNumber,
-      password: this.password,
-      createdAt: this.createdAt
+      createdAt: this.createdAt,
+      password: this.password 
     };
   }
 }
 
 module.exports = KitchenResponsible;
+
 
 
 ================================================
@@ -700,7 +692,6 @@ class KitchenSchedule {
       throw new Error("Payload must include 'weekdays' and 'weekend'");
     }
 
-    // Weekdays (same schedule)
     for (const day of weekdays) {
       result.push(
         new KitchenSchedule({
@@ -712,7 +703,6 @@ class KitchenSchedule {
       );
     }
 
-    // Weekend (same schedule)
     for (const day of weekend) {
       result.push(
         new KitchenSchedule({
@@ -729,12 +719,12 @@ class KitchenSchedule {
 
   _validateDay() {
     const validDays = [
-      "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY",
-      "SATURDAY", "SUNDAY"
+      "MONDAY", "TUESDAY", "WEDNESDAY",
+      "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"
     ];
 
     if (!validDays.includes(this.day)) {
-      throw new Error(`Invalid day '${this.day}'. Must be full uppercase name.`);
+      throw new Error(`Invalid day '${this.day}'. Must be uppercase FULL name.`);
     }
   }
 
@@ -742,7 +732,7 @@ class KitchenSchedule {
     const regex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
     if (!regex.test(this.startTime) || !regex.test(this.endTime)) {
-      throw new Error(`Invalid time format for day ${this.day}. Use HH:MM in 24h format.`);
+      throw new Error(`Invalid time format for day ${this.day}. Use HH:MM 24h format.`);
     }
 
     if (this.startTime >= this.endTime) {
@@ -754,47 +744,45 @@ class KitchenSchedule {
 module.exports = KitchenSchedule;
 
 
-
 ================================================
 FILE: src/domain/entities/Location.js
 ================================================
 class Location {
-  constructor({ 
-    id, 
-    name, 
-    streetAddress, 
-    neighborhood, 
-    stateId, 
-    municipalityId, 
-    postalCode, 
-    is_active 
+  constructor({
+    id,
+    name,
+    streetAddress,
+    neighborhood,
+    stateId,
+    municipalityId,
+    postalCode,
+    isActive
   }) {
-    this.id = id; 
-    this.name = name;
+    this.id = id;
+    this.name = name || neighborhood || "Ubicación sin nombre";
     this.streetAddress = streetAddress;
     this.neighborhood = neighborhood;
     this.stateId = stateId;
     this.municipalityId = municipalityId;
     this.postalCode = postalCode;
-    this.is_active = is_active ?? true;
+    this.isActive = isActive ?? true;
   }
 
   toJSON() {
     return {
-      id: this.id, 
+      id: this.id,
       name: this.name,
       streetAddress: this.streetAddress,
       neighborhood: this.neighborhood,
       stateId: this.stateId,
       municipalityId: this.municipalityId,
       postalCode: this.postalCode,
-      is_active: this.is_active
+      isActive: this.isActive
     };
   }
 }
 
 module.exports = Location;
-
 
 
 ================================================
@@ -906,42 +894,37 @@ module.exports = ILocationRepository;
 ================================================
 FILE: src/infrastructure/adapters/RabbitMQPublisher.js
 ================================================
-const amqp = require('amqplib');
+const amqp = require("amqplib");
 
 class RabbitMQPublisher {
   constructor() {
+    this.exchange = process.env.RABBITMQ_EXCHANGE;
+    this.url = process.env.RABBITMQ_URL;
+
     this.connection = null;
     this.channel = null;
-    this.exchange = process.env.RABBITMQ_EXCHANGE || 'bim_exchange';
   }
 
   async connect() {
-    if (this.connection) return;
-    try {
-      const url = process.env.RABBITMQ_URL;
-      if (!url) throw new Error('❌ RABBITMQ_URL no está definida en .env');
+    if (this.channel) return;
 
-      console.log('🐇 [KITCHEN] Conectando a RabbitMQ...');
-      this.connection = await amqp.connect(url);
-      this.channel = await this.connection.createChannel();
-      await this.channel.assertExchange(this.exchange, 'topic', { durable: true });
-      console.log('✅ [KITCHEN] Conectado a RabbitMQ correctamente');
-    } catch (error) {
-      console.error('❌ [KITCHEN] Error conectando a RabbitMQ:', error);
-    }
+    this.connection = await amqp.connect(this.url);
+    this.channel = await this.connection.createChannel();
+
+    await this.channel.assertExchange(this.exchange, "topic", { durable: true });
   }
 
-  async publish(routingKey, payload) {
-    try {
-      if (!this.channel) await this.connect();
+  async publish(routingKey, data) {
+    if (!this.channel) await this.connect();
 
-      const message = Buffer.from(JSON.stringify(payload));
-      this.channel.publish(this.exchange, routingKey, message, { persistent: true });
+    this.channel.publish(
+      this.exchange,
+      routingKey,
+      Buffer.from(JSON.stringify(data)),
+      { persistent: true }
+    );
 
-      console.log(`📤 [KITCHEN] Evento publicado → ${routingKey}`, payload);
-    } catch (error) {
-      console.error(`❌ [KITCHEN] Error al publicar evento ${routingKey}:`, error);
-    }
+    console.log("📤 Published:", routingKey, data);
   }
 }
 
@@ -964,16 +947,21 @@ const {
 } = require('../dependencies/dependencies');
 
 class KitchenController {
-
   async requestKitchen(req, res) {
     try {
       const result = await requestKitchenUseCase.execute(req.body);
-      res.status(201).json({ success: true, data: result });
+
+      res.status(201).json({
+        success: true,
+        data: result
+      });
     } catch (err) {
+      console.error('❌ Error en requestKitchen:', err);
+
       res.status(500).json({
         success: false,
-        message: "Error al registrar cocina",
-        error: err.message
+        message: 'Error al registrar cocina',
+        error: err.message || String(err)
       });
     }
   }
@@ -983,7 +971,28 @@ class KitchenController {
       const data = await getPendingKitchensUseCase.execute();
       res.status(200).json({ success: true, data });
     } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
+      console.error('❌ Error en getPendingKitchens:', err);
+      res.status(500).json({ success: false, error: err.message || String(err) });
+    }
+  }
+
+  async getApprovedKitchens(_req, res) {
+    try {
+      const data = await getApprovedKitchensUseCase.execute();
+      res.status(200).json({ success: true, data });
+    } catch (err) {
+      console.error('❌ Error en getApprovedKitchens:', err);
+      res.status(500).json({ success: false, error: err.message || String(err) });
+    }
+  }
+
+  async getRejectedKitchens(_req, res) {
+    try {
+      const data = await getRejectedKitchensUseCase.execute();
+      res.status(200).json({ success: true, data });
+    } catch (err) {
+      console.error('❌ Error en getRejectedKitchens:', err);
+      res.status(500).json({ success: false, error: err.message || String(err) });
     }
   }
 
@@ -998,25 +1007,8 @@ class KitchenController {
 
       res.status(200).json({ success: true, data: kitchens });
     } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  }
-
-  async getApprovedKitchens(_req, res) {
-    try {
-      const data = await getApprovedKitchensUseCase.execute();
-      res.status(200).json({ success: true, data });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  }
-
-  async getRejectedKitchens(_req, res) {
-    try {
-      const data = await getRejectedKitchensUseCase.execute();
-      res.status(200).json({ success: true, data });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
+      console.error('❌ Error en getNearbyKitchens:', err);
+      res.status(500).json({ success: false, error: err.message || String(err) });
     }
   }
 
@@ -1027,10 +1019,12 @@ class KitchenController {
 
       res.status(200).json({ success: true, data: result });
     } catch (err) {
+      console.error('❌ Error en approveKitchen:', err);
+
       res.status(err.http_status || 500).json({
         success: false,
-        message: "Error al aprobar cocina",
-        error: err.message
+        message: 'Error al aprobar cocina',
+        error: err.message || String(err)
       });
     }
   }
@@ -1039,15 +1033,22 @@ class KitchenController {
     try {
       const kitchenId = req.params.id;
       const reason = req.body.reason;
+      const adminUserId = req.user?.id || null;
 
-      const result = await rejectKitchenUseCase.execute(kitchenId, reason);
+      const result = await rejectKitchenUseCase.execute(
+        kitchenId,
+        reason,
+        adminUserId
+      );
 
       res.status(200).json({ success: true, data: result });
     } catch (err) {
+      console.error('❌ Error en rejectKitchen:', err);
+
       res.status(err.http_status || 500).json({
         success: false,
-        message: "Error al rechazar cocina",
-        error: err.message
+        message: 'Error al rechazar cocina',
+        error: err.message || String(err)
       });
     }
   }
@@ -1066,13 +1067,15 @@ class KitchenController {
 
       res.status(200).json({
         success: true,
-        message: "Cocina actualizada correctamente",
+        message: 'Cocina actualizada correctamente',
         data: updatedKitchen
       });
     } catch (err) {
+      console.error('❌ Error en updateKitchen:', err);
+
       res.status(err.http_status || 500).json({
         success: false,
-        message: err.message || "Error al actualizar la cocina"
+        message: err.message || 'Error al actualizar la cocina'
       });
     }
   }
@@ -1084,17 +1087,18 @@ class KitchenController {
 
       res.status(200).json({ success: true, data });
     } catch (err) {
+      console.error('❌ Error en getKitchenDetails:', err);
+
       res.status(err.http_status || 500).json({
         success: false,
-        message: "Error al obtener detalles de la cocina",
-        error: err.message
+        message: 'Error al obtener detalles de la cocina',
+        error: err.message || String(err)
       });
     }
   }
 }
 
 module.exports = new KitchenController();
-
 
 
 ================================================
@@ -1118,13 +1122,15 @@ class KitchenScheduleController {
 
       res.status(201).json({
         success: true,
-        message: "Horarios creados correctamente",
+        message: 'Horarios creados correctamente',
         data: schedules
       });
     } catch (err) {
+      console.error('❌ Error en create schedule:', err);
+
       res.status(400).json({
         success: false,
-        message: err.message
+        message: err.message || String(err)
       });
     }
   }
@@ -1140,13 +1146,15 @@ class KitchenScheduleController {
 
       res.status(200).json({
         success: true,
-        message: "Horarios actualizados correctamente",
+        message: 'Horarios actualizados correctamente',
         data: schedules
       });
     } catch (err) {
+      console.error('❌ Error en update schedule:', err);
+
       res.status(400).json({
         success: false,
-        message: err.message
+        message: err.message || String(err)
       });
     }
   }
@@ -1157,9 +1165,13 @@ class KitchenScheduleController {
       const schedules = await getKitchenScheduleUseCase.execute(kitchenId);
 
       res.status(200).json({ success: true, data: schedules });
-
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      console.error('❌ Error en get schedule:', err);
+
+      res.status(400).json({
+        success: false,
+        message: err.message || String(err)
+      });
     }
   }
 }
@@ -1190,7 +1202,7 @@ const CreateKitchenScheduleUseCase = require('../../../application/use-cases/Cre
 const UpdateKitchenScheduleUseCase = require('../../../application/use-cases/UpdateKitchenScheduleUseCase');
 const GetKitchenScheduleUseCase = require('../../../application/use-cases/GetKitchenScheduleUseCase');
 
-const RabbitMQPublisher = require('../../adapters/RabbitMQPublisher');
+const rabbitMQPublisher = require('../../adapters/RabbitMQPublisher');
 
 const kitchenRepository = new SequelizeKitchenRepository();
 const locationRepository = new SequelizeLocationRepository();
@@ -1201,19 +1213,18 @@ module.exports = {
   requestKitchenUseCase: new RequestKitchenUseCase(
     kitchenRepository,
     locationRepository,
-    responsibleRepository,
-    RabbitMQPublisher
+    responsibleRepository
   ),
 
   approveKitchenUseCase: new ApproveKitchenUseCase(
     kitchenRepository,
     responsibleRepository,
-    RabbitMQPublisher
+    rabbitMQPublisher
   ),
 
   rejectKitchenUseCase: new RejectKitchenUseCase(
     kitchenRepository,
-    RabbitMQPublisher
+    rabbitMQPublisher
   ),
 
   getPendingKitchensUseCase: new GetPendingKitchensUseCase(kitchenRepository),
@@ -1227,13 +1238,18 @@ module.exports = {
 
   getKitchenDetailsUseCase: new GetKitchenDetailsUseCase(
     kitchenRepository,
-    locationRepository,
-    responsibleRepository
+    locationRepository
   ),
 
-  createKitchenScheduleUseCase: new CreateKitchenScheduleUseCase(scheduleRepository),
-  updateKitchenScheduleUseCase: new UpdateKitchenScheduleUseCase(scheduleRepository),
-  getKitchenScheduleUseCase: new GetKitchenScheduleUseCase(scheduleRepository)
+  createKitchenScheduleUseCase: new CreateKitchenScheduleUseCase(
+    scheduleRepository
+  ),
+  updateKitchenScheduleUseCase: new UpdateKitchenScheduleUseCase(
+    scheduleRepository
+  ),
+  getKitchenScheduleUseCase: new GetKitchenScheduleUseCase(
+    scheduleRepository
+  )
 };
 
 
@@ -1243,30 +1259,34 @@ FILE: src/infrastructure/api/routes/KitchenRoutes.js
 const express = require('express');
 const router = express.Router();
 
-const requireAuth = require("../../../middleware/require-auth");
-const requireRole = require("../../../middleware/require-role");
-const requireKitchenOwner = require("../../../middleware/require-kitchen-owner");
+const requireAuth = require('../../../middleware/require-auth');
+const requireRole = require('../../../middleware/require-role');
+const requireKitchenOwner = require('../../../middleware/require-kitchen-owner');
 
 const controller = require('../controllers/KitchenController');
 
-
 router.post('/request', controller.requestKitchen);
 
-router.get('/pending', requireRole("Super_admin"), controller.getPendingKitchens);
-router.get('/approved', requireRole("Super_admin"), controller.getApprovedKitchens);
-router.get('/rejected', requireRole("Super_admin"), controller.getRejectedKitchens);
+router.get('/pending', requireRole('Super_admin'), controller.getPendingKitchens);
+router.get('/approved', requireRole('Super_admin'), controller.getApprovedKitchens);
+router.get('/rejected', requireRole('Super_admin'), controller.getRejectedKitchens);
 
-router.get('/nearby', requireAuth, controller.getNearbyKitchens);
+router.get('/nearby', requireRole('Voluntario'), controller.getNearbyKitchens);
 
-router.post('/:id/approve', requireRole("Super_admin"), controller.approveKitchen);
-router.post('/:id/reject', requireRole("Super_admin"), controller.rejectKitchen);
+router.post('/:id/approve', requireRole('Super_admin'), controller.approveKitchen);
+router.post('/:id/reject', requireRole('Super_admin'), controller.rejectKitchen);
 
-router.put('/:id',requireAuth,requireRole("Admin_cocina"),requireKitchenOwner,controller.updateKitchen);
+router.put(
+  '/:id',
+  requireAuth,
+  requireRole('Admin_cocina'),
+  requireKitchenOwner,
+  controller.updateKitchen
+);
 
 router.get('/:id', requireAuth, controller.getKitchenDetails);
 
 module.exports = router;
-
 
 
 ================================================
@@ -1275,9 +1295,9 @@ FILE: src/infrastructure/api/routes/KitchenScheduleRoutes.js
 const express = require('express');
 const router = express.Router();
 
-const requireAuth = require("../../../middleware/require-auth");
-const requireRole = require("../../../middleware/require-role");
-const requireKitchenOwner = require("../../../middleware/require-kitchen-owner");
+const requireAuth = require('../../../middleware/require-auth');
+const requireRole = require('../../../middleware/require-role');
+const requireKitchenOwner = require('../../../middleware/require-kitchen-owner');
 
 const controller = require('../controllers/KitchenScheduleController');
 
@@ -1338,56 +1358,78 @@ module.exports = sequelize;
 FILE: src/infrastructure/database/models/KitchenModel.js
 ================================================
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database'); 
+const sequelize = require('../config/database');
 
 const Location = require('./LocationModel');
-const KitchenSchedule = require('./KitchenScheduleModel'); // ← NUEVO
+const KitchenSchedule = require('./KitchenScheduleModel');
+const KitchenResponsible = require('./KitchenResponsibleModel');
 
 const Kitchen = sequelize.define(
   'Kitchen',
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+
     name: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: false },
-    owner_id: { type: DataTypes.INTEGER, allowNull: false },
 
-    location_id: {
+    ownerId: { type: DataTypes.INTEGER, allowNull: false },
+
+    locationId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: { model: 'locations', key: 'id' },
+      references: { model: 'locations', key: 'id' }
     },
 
-    contact_phone: { type: DataTypes.STRING, allowNull: false },
-    contact_email: { type: DataTypes.STRING, allowNull: false },
-    image_url: { type: DataTypes.STRING },
-    registration_date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+    contactPhone: { type: DataTypes.STRING, allowNull: false },
+    contactEmail: { type: DataTypes.STRING, allowNull: false },
+    imageUrl: { type: DataTypes.STRING },
 
-    approval_status: {
+    registrationDate: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+
+    approvalStatus: {
       type: DataTypes.ENUM('pending', 'approved', 'rejected'),
       defaultValue: 'pending'
     },
 
-    approved_by: { type: DataTypes.INTEGER },
-    approval_date: { type: DataTypes.DATE },
-    rejection_reason: { type: DataTypes.TEXT },
-    is_active: { type: DataTypes.BOOLEAN, defaultValue: false }
+    approvedBy: { type: DataTypes.INTEGER },
+    approvalDate: { type: DataTypes.DATE },
+    rejectionReason: { type: DataTypes.TEXT },
+
+    isActive: { type: DataTypes.BOOLEAN, defaultValue: false }
   },
   {
     tableName: 'kitchens',
-    timestamps: false,
+    timestamps: false
   }
 );
 
-Kitchen.belongsTo(Location, { foreignKey: 'location_id', as: 'location' });
-Location.hasMany(Kitchen, { foreignKey: 'location_id', as: 'kitchens' });
+Kitchen.belongsTo(Location, {
+  foreignKey: 'locationId',
+  as: 'location'
+});
+
+Location.hasMany(Kitchen, {
+  foreignKey: 'locationId',
+  as: 'kitchens'
+});
+
+Kitchen.hasOne(KitchenResponsible, {
+  foreignKey: 'kitchenId',
+  as: 'responsible'
+});
+
+KitchenResponsible.belongsTo(Kitchen, {
+  foreignKey: 'kitchenId',
+  as: 'kitchen'
+});
 
 Kitchen.hasOne(KitchenSchedule, {
-  foreignKey: 'kitchen_id',
+  foreignKey: 'kitchenId',
   as: 'schedule'
 });
 
 KitchenSchedule.belongsTo(Kitchen, {
-  foreignKey: 'kitchen_id',
+  foreignKey: 'kitchenId',
   as: 'kitchen'
 });
 
@@ -1400,30 +1442,32 @@ FILE: src/infrastructure/database/models/KitchenResponsibleModel.js
 ================================================
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const Kitchen = require('./KitchenModel');
 
 const KitchenResponsible = sequelize.define(
   'KitchenResponsible',
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
 
-    kitchen_id: {
+    kitchenId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: { model: 'kitchens', key: 'id' }
     },
-    names: { type: DataTypes.STRING, allowNull: false },
-    first_last_name: { type: DataTypes.STRING, allowNull: false },
-    second_last_name: { type: DataTypes.STRING },
-    email: { type: DataTypes.STRING, allowNull: false },
-    phone_number: { type: DataTypes.STRING, allowNull: false },
-    created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
-  },
-  { tableName: "kitchen_responsibles", timestamps: false }
-);
 
-Kitchen.hasOne(KitchenResponsible, { foreignKey: 'kitchen_id', as: 'responsible' });
-KitchenResponsible.belongsTo(Kitchen, { foreignKey: 'kitchen_id', as: 'kitchen' });
+    names: { type: DataTypes.STRING, allowNull: false },
+    firstLastName: { type: DataTypes.STRING, allowNull: false },
+    secondLastName: { type: DataTypes.STRING, allowNull: true },
+
+    email: { type: DataTypes.STRING, allowNull: false },
+    phoneNumber: { type: DataTypes.STRING, allowNull: false },
+
+    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+  },
+  {
+    tableName: 'kitchenResponsibles',
+    timestamps: false
+  }
+);
 
 module.exports = KitchenResponsible;
 
@@ -1435,43 +1479,28 @@ FILE: src/infrastructure/database/models/KitchenScheduleModel.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const KitchenScheduleModel = sequelize.define(
+const KitchenSchedule = sequelize.define(
   'KitchenSchedule',
   {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
 
-    kitchen_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
+    kitchenId: { type: DataTypes.INTEGER, allowNull: false },
 
-    open_time_weekdays: {
-      type: DataTypes.TIME,
-      allowNull: false,
-    },
-    close_time_weekdays: {
-      type: DataTypes.TIME,
-      allowNull: false,
-    },
+    openTimeWeekdays: { type: DataTypes.TIME, allowNull: false },
+    closeTimeWeekdays: { type: DataTypes.TIME, allowNull: false },
 
-    open_time_weekends: {
-      type: DataTypes.TIME,
-      allowNull: false,
-    },
-    close_time_weekends: {
-      type: DataTypes.TIME,
-      allowNull: false,
-    },
+    openTimeWeekends: { type: DataTypes.TIME, allowNull: false },
+    closeTimeWeekends: { type: DataTypes.TIME, allowNull: false },
 
-    is_active: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
-    }
+    isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
   },
-  { tableName: 'kitchen_schedules', timestamps: false }
+  {
+    tableName: 'kitchenSchedules',
+    timestamps: false
+  }
 );
 
-module.exports = KitchenScheduleModel;
+module.exports = KitchenSchedule;
 
 
 
@@ -1485,20 +1514,24 @@ const Location = sequelize.define(
   'Location',
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+
     name: { type: DataTypes.STRING, allowNull: false },
-    street_address: { type: DataTypes.STRING, allowNull: false },
+
+    streetAddress: { type: DataTypes.STRING, allowNull: false },
     neighborhood: { type: DataTypes.STRING, allowNull: false },
-    state_id: { type: DataTypes.INTEGER, allowNull: false },
-    municipality_id: { type: DataTypes.INTEGER, allowNull: false },
-    postal_code: { type: DataTypes.STRING, allowNull: false },
-    is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
+
+    stateId: { type: DataTypes.INTEGER, allowNull: false },
+    municipalityId: { type: DataTypes.INTEGER, allowNull: false },
+
+    postalCode: { type: DataTypes.STRING, allowNull: false },
+
+    isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
   },
   {
     tableName: 'locations',
-    timestamps: false,
+    timestamps: false
   }
 );
-
 
 module.exports = Location;
 
@@ -1507,19 +1540,16 @@ module.exports = Location;
 ================================================
 FILE: src/infrastructure/database/repositories/SequelizeKitchenRepository.js
 ================================================
-const KitchenModel = require('../models/KitchenModel');
-const KitchenResponsibleModel = require('../models/KitchenResponsibleModel');
-const LocationModel = require('../models/LocationModel');
+const KitchenModel = require("../models/KitchenModel");
+const KitchenResponsibleModel = require("../models/KitchenResponsibleModel");
+const LocationModel = require("../models/LocationModel");
 
-const Kitchen = require('../../../domain/entities/Kitchen');
+const Kitchen = require("../../../domain/entities/Kitchen");
 
 class SequelizeKitchenRepository {
-
   _toDomain(model) {
     if (!model) return null;
-
     const json = model.toJSON();
-
     return new Kitchen({
       ...json,
       responsible: json.responsible || null,
@@ -1531,16 +1561,14 @@ class SequelizeKitchenRepository {
     const newKitchen = await KitchenModel.create({
       name: data.name,
       description: data.description,
-      owner_id: data.owner_id ?? 0,
-      location_id: data.location_id,
 
-      // 👇 CORRECCIÓN CRÍTICA (mapeo correcto)
-      contact_phone: data.contactPhone ?? data.contact_phone,
-      contact_email: data.contactEmail ?? data.contact_email,
+      ownerId: data.ownerId,
 
-      image_url: data.imageUrl ?? data.image_url ?? null,
-      approval_status: 'pending',
-      is_active: false
+      locationId: data.locationId,
+
+      contactPhone: data.contactPhone,
+      contactEmail: data.contactEmail,
+      imageUrl: data.imageUrl ?? null
     });
 
     return this._toDomain(newKitchen);
@@ -1550,8 +1578,8 @@ class SequelizeKitchenRepository {
     const result = await KitchenModel.findOne({
       where: { id },
       include: [
-        { model: KitchenResponsibleModel, as: 'responsible' },
-        { model: LocationModel, as: 'location' }
+        { model: KitchenResponsibleModel, as: "responsible" },
+        { model: LocationModel, as: "location" }
       ]
     });
 
@@ -1564,39 +1592,48 @@ class SequelizeKitchenRepository {
   }
 
   async findPending() {
-    const result = await KitchenModel.findAll({
-      where: { approval_status: 'pending' },
-      include: [
-        { model: KitchenResponsibleModel, as: 'responsible' },
-        { model: LocationModel, as: 'location' }
-      ]
-    });
-
-    return result.map(r => this._toDomain(r));
+    return (
+      await KitchenModel.findAll({
+        where: { approvalStatus: "pending" },
+        include: [
+          { model: KitchenResponsibleModel, as: "responsible" },
+          { model: LocationModel, as: "location" }
+        ]
+      })
+    ).map(m => this._toDomain(m));
   }
 
   async findApproved() {
-    const result = await KitchenModel.findAll({
-      where: { approval_status: 'approved' },
-      include: [
-        { model: KitchenResponsibleModel, as: 'responsible' },
-        { model: LocationModel, as: 'location' }
-      ]
-    });
-
-    return result.map(r => this._toDomain(r));
+    return (
+      await KitchenModel.findAll({
+        where: { approvalStatus: "approved" },
+        include: [
+          { model: KitchenResponsibleModel, as: "responsible" },
+          { model: LocationModel, as: "location" }
+        ]
+      })
+    ).map(m => this._toDomain(m));
   }
 
   async findRejected() {
-    const result = await KitchenModel.findAll({
-      where: { approval_status: 'rejected' },
-      include: [
-        { model: KitchenResponsibleModel, as: 'responsible' },
-        { model: LocationModel, as: 'location' }
-      ]
-    });
+    return (
+      await KitchenModel.findAll({
+        where: { approvalStatus: "rejected" },
+        include: [
+          { model: KitchenResponsibleModel, as: "responsible" },
+          { model: LocationModel, as: "location" }
+        ]
+      })
+    ).map(m => this._toDomain(m));
+  }
 
-    return result.map(r => this._toDomain(r));
+  async findByLocationIds(ids) {
+    return (
+      await KitchenModel.findAll({
+        where: { locationId: ids },
+        include: [{ model: LocationModel, as: "location" }]
+      })
+    ).map(m => this._toDomain(m));
   }
 }
 
@@ -1607,8 +1644,8 @@ module.exports = SequelizeKitchenRepository;
 ================================================
 FILE: src/infrastructure/database/repositories/SequelizeKitchenResponsibleRepository.js
 ================================================
-const KitchenResponsibleModel = require('../models/KitchenResponsibleModel');
-const KitchenResponsible = require('../../../domain/entities/KitchenResponsible');
+const KitchenResponsibleModel = require("../models/KitchenResponsibleModel");
+const KitchenResponsible = require("../../../domain/entities/KitchenResponsible");
 
 class SequelizeKitchenResponsibleRepository {
   _toDomain(model) {
@@ -1618,24 +1655,22 @@ class SequelizeKitchenResponsibleRepository {
 
   async create(data) {
     const created = await KitchenResponsibleModel.create({
-      kitchen_id: data.kitchen_id,
+      kitchenId: data.kitchenId,
       names: data.names,
-      first_last_name: data.first_last_name,
-      second_last_name: data.second_last_name || null,
+      firstLastName: data.firstLastName,
+      secondLastName: data.secondLastName,
       email: data.email,
-      phone_number: data.phone_number
+      phoneNumber: data.phoneNumber
     });
 
-    return new KitchenResponsible({
-      ...created.toJSON(),
-      password: data.password
-    });
+    return this._toDomain(created);
   }
 
   async findByKitchenId(kitchenId) {
     const model = await KitchenResponsibleModel.findOne({
-      where: { kitchen_id: kitchenId }
+      where: { kitchenId }
     });
+
     return this._toDomain(model);
   }
 }
@@ -1646,8 +1681,8 @@ module.exports = SequelizeKitchenResponsibleRepository;
 ================================================
 FILE: src/infrastructure/database/repositories/SequelizeKitchenScheduleRepository.js
 ================================================
-const KitchenScheduleModel = require('../models/KitchenScheduleModel');
-const KitchenSchedule = require('../../../domain/entities/KitchenSchedule');
+const KitchenScheduleModel = require("../models/KitchenScheduleModel");
+const KitchenSchedule = require("../../../domain/entities/KitchenSchedule");
 
 class SequelizeKitchenScheduleRepository {
   _toDomain(model) {
@@ -1656,79 +1691,64 @@ class SequelizeKitchenScheduleRepository {
   }
 
   async create(schedule) {
-    const newRow = await KitchenScheduleModel.create({
-      kitchen_id: schedule.kitchenId,
+    const created = await KitchenScheduleModel.create({
+      kitchenId: schedule.kitchenId,
       day: schedule.day,
-      start_time: schedule.startTime,
-      end_time: schedule.endTime
+      startTime: schedule.startTime,
+      endTime: schedule.endTime
     });
 
-    return this._toDomain(newRow);
+    return this._toDomain(created);
   }
 
   async findByKitchenId(kitchenId) {
-    const rows = await KitchenScheduleModel.findAll({
-      where: { kitchen_id: kitchenId }
-    });
-
+    const rows = await KitchenScheduleModel.findAll({ where: { kitchenId } });
     return rows.map(r => this._toDomain(r));
   }
 
   async deleteByKitchenId(kitchenId) {
-    await KitchenScheduleModel.destroy({
-      where: { kitchen_id: kitchenId }
-    });
+    await KitchenScheduleModel.destroy({ where: { kitchenId } });
   }
 }
 
 module.exports = SequelizeKitchenScheduleRepository;
 
 
-
 ================================================
 FILE: src/infrastructure/database/repositories/SequelizeLocationRepository.js
 ================================================
-const LocationModel = require('../models/LocationModel');
-const Location = require('../../../domain/entities/Location');
+const LocationModel = require("../models/LocationModel");
+const Location = require("../../../domain/entities/Location");
 
 class SequelizeLocationRepository {
-
   _toDomain(model) {
     if (!model) return null;
     return new Location(model.toJSON());
   }
 
-  async create(locationData) {
-    console.log("📍 Datos recibidos en create(Location):", locationData);
-
+  async create(data) {
     const newLocation = await LocationModel.create({
-      name: locationData.name || locationData.neighborhood || 'Ubicación sin nombre',
-      street_address: locationData.streetAddress,
-      neighborhood: locationData.neighborhood,
-      state_id: locationData.stateId,
-      municipality_id: locationData.municipalityId,
-      postal_code: locationData.postalCode,
-      is_active: true
+      streetAddress: data.streetAddress,
+      neighborhood: data.neighborhood,
+      stateId: data.stateId,
+      municipalityId: data.municipalityId,
+      postalCode: data.postalCode
     });
 
     return this._toDomain(newLocation);
   }
 
   async findById(id) {
-    const record = await LocationModel.findByPk(id);
-    return this._toDomain(record);
+    const model = await LocationModel.findByPk(id);
+    return this._toDomain(model);
   }
 
   async findByStateAndMunicipality(stateId, municipalityId) {
-    const results = await LocationModel.findAll({
-      where: {
-        state_id: stateId,
-        municipality_id: municipalityId,
-        is_active: true
-      }
+    const models = await LocationModel.findAll({
+      where: { stateId, municipalityId, isActive: true }
     });
 
-    return results.map(r => this._toDomain(r));
+    return models.map(m => this._toDomain(m));
   }
 }
 
@@ -1738,22 +1758,25 @@ module.exports = SequelizeLocationRepository;
 ================================================
 FILE: src/infrastructure/store/temp-password.store.js
 ================================================
-const tempPasswords = {};
+const tempPasswords = new Map();
+
+function saveTemporaryPassword(kitchenId, password) {
+  tempPasswords.set(kitchenId, password);
+}
+
+function getTemporaryPassword(kitchenId) {
+  return tempPasswords.get(kitchenId);
+}
+
+function clearTemporaryPassword(kitchenId) {
+  tempPasswords.delete(kitchenId);
+}
 
 module.exports = {
-  saveTemporaryPassword(kitchenId, password) {
-    tempPasswords[kitchenId] = password;
-  },
-
-  getTemporaryPassword(kitchenId) {
-    return tempPasswords[kitchenId];
-  },
-
-  clearTemporaryPassword(kitchenId) {
-    delete tempPasswords[kitchenId];
-  }
+  saveTemporaryPassword,
+  getTemporaryPassword,
+  clearTemporaryPassword
 };
-
 
 
 ================================================

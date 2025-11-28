@@ -1,23 +1,33 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+const { DataTypes } = require("sequelize");
+const sequelize = require("../config/database");
 
 const KitchenSchedule = sequelize.define(
-  'KitchenSchedule',
+  "KitchenSchedule",
   {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
 
     kitchenId: { type: DataTypes.INTEGER, allowNull: false },
 
-    openTimeWeekdays: { type: DataTypes.TIME, allowNull: false },
-    closeTimeWeekdays: { type: DataTypes.TIME, allowNull: false },
+    day: {
+      type: DataTypes.ENUM(
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ),
+      allowNull: false
+    },
 
-    openTimeWeekends: { type: DataTypes.TIME, allowNull: false },
-    closeTimeWeekends: { type: DataTypes.TIME, allowNull: false },
+    startTime: { type: DataTypes.TIME, allowNull: false },
+    endTime: { type: DataTypes.TIME, allowNull: false },
 
     isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
   },
   {
-    tableName: 'kitchenSchedules',
+    tableName: "kitchenSchedules",
     timestamps: false
   }
 );

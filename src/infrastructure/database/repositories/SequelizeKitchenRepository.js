@@ -1,17 +1,26 @@
-const KitchenModel = require("../models/KitchenModel");
-const KitchenResponsibleModel = require("../models/KitchenResponsibleModel");
-const LocationModel = require("../models/LocationModel");
+const KitchenModel = require('../models/KitchenModel');
+const KitchenResponsibleModel = require('../models/KitchenResponsibleModel');
+const LocationModel = require('../models/LocationModel');
+const KitchenScheduleModel = require('../models/KitchenScheduleModel');
 
-const Kitchen = require("../../../domain/entities/Kitchen");
+const Kitchen = require('../../../domain/entities/Kitchen');
 
 class SequelizeKitchenRepository {
+
   _toDomain(model) {
     if (!model) return null;
+
     const json = model.toJSON();
+
+    if (json.responsible) {
+      delete json.responsible.password;
+    }
+
     return new Kitchen({
       ...json,
       responsible: json.responsible || null,
-      location: json.location || null
+      location: json.location || null,
+      schedule: json.schedule || []
     });
   }
 
@@ -19,14 +28,13 @@ class SequelizeKitchenRepository {
     const newKitchen = await KitchenModel.create({
       name: data.name,
       description: data.description,
-
-      ownerId: data.ownerId,
-
+      ownerId: data.ownerId ?? 0,
       locationId: data.locationId,
-
       contactPhone: data.contactPhone,
       contactEmail: data.contactEmail,
-      imageUrl: data.imageUrl ?? null
+      imageUrl: data.imageUrl ?? null,
+      approvalStatus: 'pending',
+      isActive: false
     });
 
     return this._toDomain(newKitchen);
@@ -36,8 +44,13 @@ class SequelizeKitchenRepository {
     const result = await KitchenModel.findOne({
       where: { id },
       include: [
-        { model: KitchenResponsibleModel, as: "responsible" },
-        { model: LocationModel, as: "location" }
+        {
+          model: KitchenResponsibleModel,
+          as: "responsible",
+          attributes: { exclude: ["password"] }
+        },
+        { model: LocationModel, as: "location" },
+        { model: KitchenScheduleModel, as: "schedule" }
       ]
     });
 
@@ -49,49 +62,53 @@ class SequelizeKitchenRepository {
     return this.findById(id);
   }
 
+  async findByStatus(status) {
+    const result = await KitchenModel.findAll({
+      where: { approvalStatus: status },
+      include: [
+        {
+          model: KitchenResponsibleModel,
+          as: "responsible",
+          attributes: { exclude: ["password"] }
+        },
+        { model: LocationModel, as: "location" },
+        { model: KitchenScheduleModel, as: "schedule" }
+      ]
+    });
+
+    return result.map(r => this._toDomain(r));
+  }
+
   async findPending() {
-    return (
-      await KitchenModel.findAll({
-        where: { approvalStatus: "pending" },
-        include: [
-          { model: KitchenResponsibleModel, as: "responsible" },
-          { model: LocationModel, as: "location" }
-        ]
-      })
-    ).map(m => this._toDomain(m));
+    return this.findByStatus("pending");
   }
 
   async findApproved() {
-    return (
-      await KitchenModel.findAll({
-        where: { approvalStatus: "approved" },
-        include: [
-          { model: KitchenResponsibleModel, as: "responsible" },
-          { model: LocationModel, as: "location" }
-        ]
-      })
-    ).map(m => this._toDomain(m));
+    return this.findByStatus("approved");
   }
 
   async findRejected() {
-    return (
-      await KitchenModel.findAll({
-        where: { approvalStatus: "rejected" },
-        include: [
-          { model: KitchenResponsibleModel, as: "responsible" },
-          { model: LocationModel, as: "location" }
-        ]
-      })
-    ).map(m => this._toDomain(m));
+    return this.findByStatus("rejected");
   }
 
-  async findByLocationIds(ids) {
-    return (
-      await KitchenModel.findAll({
-        where: { locationId: ids },
-        include: [{ model: LocationModel, as: "location" }]
-      })
-    ).map(m => this._toDomain(m));
+  async findByLocationIds(stateId, municipalityId) {
+    const result = await KitchenModel.findAll({
+      include: [
+        {
+          model: LocationModel,
+          as: "location",
+          where: { stateId, municipalityId }
+        },
+        {
+          model: KitchenResponsibleModel,
+          as: "responsible",
+          attributes: { exclude: ["password"] }
+        },
+        { model: KitchenScheduleModel, as: "schedule" }
+      ]
+    });
+
+    return result.map(r => this._toDomain(r));
   }
 }
 

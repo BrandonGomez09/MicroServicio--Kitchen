@@ -1,9 +1,8 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-
 const Location = require('./LocationModel');
-const KitchenSchedule = require('./KitchenScheduleModel');
 const KitchenResponsible = require('./KitchenResponsibleModel');
+const KitchenSchedule = require('./KitchenScheduleModel');
 
 const Kitchen = sequelize.define(
   'Kitchen',
@@ -15,15 +14,12 @@ const Kitchen = sequelize.define(
 
     ownerId: { type: DataTypes.INTEGER, allowNull: false },
 
-    locationId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: { model: 'locations', key: 'id' }
-    },
+    locationId: { type: DataTypes.INTEGER, allowNull: false },
 
     contactPhone: { type: DataTypes.STRING, allowNull: false },
     contactEmail: { type: DataTypes.STRING, allowNull: false },
-    imageUrl: { type: DataTypes.STRING },
+
+    imageUrl: { type: DataTypes.STRING, allowNull: true },
 
     registrationDate: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
 
@@ -32,9 +28,9 @@ const Kitchen = sequelize.define(
       defaultValue: 'pending'
     },
 
-    approvedBy: { type: DataTypes.INTEGER },
-    approvalDate: { type: DataTypes.DATE },
-    rejectionReason: { type: DataTypes.TEXT },
+    approvedBy: { type: DataTypes.INTEGER, allowNull: true },
+    approvalDate: { type: DataTypes.DATE, allowNull: true },
+    rejectionReason: { type: DataTypes.TEXT, allowNull: true },
 
     isActive: { type: DataTypes.BOOLEAN, defaultValue: false }
   },
@@ -45,33 +41,28 @@ const Kitchen = sequelize.define(
 );
 
 Kitchen.belongsTo(Location, {
-  foreignKey: 'locationId',
-  as: 'location'
-});
-
-Location.hasMany(Kitchen, {
-  foreignKey: 'locationId',
-  as: 'kitchens'
+  foreignKey: "locationId",
+  as: "location"
 });
 
 Kitchen.hasOne(KitchenResponsible, {
-  foreignKey: 'kitchenId',
-  as: 'responsible'
+  foreignKey: "kitchenId",
+  as: "responsible"
 });
 
 KitchenResponsible.belongsTo(Kitchen, {
-  foreignKey: 'kitchenId',
-  as: 'kitchen'
+  foreignKey: "kitchenId",
+  as: "kitchen"
 });
 
-Kitchen.hasOne(KitchenSchedule, {
-  foreignKey: 'kitchenId',
-  as: 'schedule'
+Kitchen.hasMany(KitchenSchedule, {
+  foreignKey: "kitchenId",
+  as: "schedule"
 });
 
 KitchenSchedule.belongsTo(Kitchen, {
-  foreignKey: 'kitchenId',
-  as: 'kitchen'
+  foreignKey: "kitchenId",
+  as: "kitchen"
 });
 
 module.exports = Kitchen;

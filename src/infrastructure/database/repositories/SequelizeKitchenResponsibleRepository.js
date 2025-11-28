@@ -1,32 +1,44 @@
 const KitchenResponsibleModel = require("../models/KitchenResponsibleModel");
-const KitchenResponsible = require("../../../domain/entities/KitchenResponsible");
 
-class SequelizeKitchenResponsibleRepository {
-  _toDomain(model) {
-    if (!model) return null;
-    return new KitchenResponsible(model.toJSON());
-  }
-
+class SequelizeResponsibleRepository {
   async create(data) {
-    const created = await KitchenResponsibleModel.create({
+    return await KitchenResponsibleModel.create({
       kitchenId: data.kitchenId,
       names: data.names,
       firstLastName: data.firstLastName,
       secondLastName: data.secondLastName,
       email: data.email,
-      phoneNumber: data.phoneNumber
+      phoneNumber: data.phoneNumber,
+      password: data.password, 
+      userId: data.userId ?? null 
     });
+  }
 
-    return this._toDomain(created);
+  async findById(id) {
+    return await KitchenResponsibleModel.findByPk(id);
   }
 
   async findByKitchenId(kitchenId) {
-    const model = await KitchenResponsibleModel.findOne({
+    return await KitchenResponsibleModel.findOne({
       where: { kitchenId }
     });
+  }
 
-    return this._toDomain(model);
+  async update(id, data) {
+    await KitchenResponsibleModel.update(data, { where: { id } });
+    return await this.findById(id);
+  }
+
+  async updateByKitchenId(kitchenId, data) {
+    await KitchenResponsibleModel.update(data, { where: { kitchenId } });
+    return await this.findByKitchenId(kitchenId);
+  }
+
+  async delete(id) {
+    return await KitchenResponsibleModel.destroy({
+      where: { id }
+    });
   }
 }
 
-module.exports = SequelizeKitchenResponsibleRepository;
+module.exports = SequelizeResponsibleRepository;

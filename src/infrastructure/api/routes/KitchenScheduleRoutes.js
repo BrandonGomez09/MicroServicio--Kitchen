@@ -25,7 +25,7 @@ router.put(
 
 router.get(
   '/:kitchenId/schedules',
-  requireAuth,
+  requireAuth, 
   controller.get
 );
 

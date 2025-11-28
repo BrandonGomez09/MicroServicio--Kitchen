@@ -1,18 +1,18 @@
 class GetKitchenDetailsUseCase {
-  constructor(kitchenRepository, locationRepository) {
+  constructor(kitchenRepository) {
     this.kitchenRepository = kitchenRepository;
-    this.locationRepository = locationRepository;
   }
 
   async execute(kitchenId) {
     const kitchen = await this.kitchenRepository.findById(kitchenId);
     if (!kitchen) throw new Error("Kitchen not found");
 
-    const location = kitchen.locationId
-      ? await this.locationRepository.findById(kitchen.locationId)
-      : null;
-
-    return { kitchen, location };
+    return {
+      kitchen,
+      location: kitchen.location || null,
+      responsible: kitchen.responsible || null,
+      schedule: kitchen.schedule || []
+    };
   }
 }
 

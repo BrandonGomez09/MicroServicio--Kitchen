@@ -3,8 +3,22 @@ const kitchenRepository = new SequelizeKitchenRepository();
 
 module.exports = async function requireKitchenOwner(req, res, next) {
   try {
-    const userId = req.user.id;
-    const kitchenId = req.params.id;
+    const userId = req.user?.id;
+    const kitchenId = req.params.kitchenId; // ✅ CORREGIDO
+
+    if (!kitchenId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing kitchenId parameter"
+      });
+    }
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: User not authenticated"
+      });
+    }
 
     const kitchen = await kitchenRepository.findById(kitchenId);
 
@@ -23,6 +37,7 @@ module.exports = async function requireKitchenOwner(req, res, next) {
     }
 
     next();
+
   } catch (error) {
     console.error("Error in requireKitchenOwner:", error);
     return res.status(500).json({

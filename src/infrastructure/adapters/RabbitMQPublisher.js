@@ -1,34 +1,35 @@
 const amqp = require("amqplib");
+const rabbitmqConfig = require("../database/config/rabbitmq.config");
 
 class RabbitMQPublisher {
   constructor() {
-    this.exchange = process.env.RABBITMQ_EXCHANGE;
-    this.url = process.env.RABBITMQ_URL;
-
-    this.connection = null;
+    this.exchange = rabbitmqConfig.exchange;
+    this.conn = null;
     this.channel = null;
   }
 
   async connect() {
     if (this.channel) return;
 
-    this.connection = await amqp.connect(this.url);
-    this.channel = await this.connection.createChannel();
+    this.conn = await amqp.connect(rabbitmqConfig.url);
+    this.channel = await this.conn.createChannel();
 
     await this.channel.assertExchange(this.exchange, "topic", { durable: true });
+
+    console.log("🐇 [Kitchen] RabbitMQ Publisher connected");
   }
 
-  async publish(routingKey, data) {
-    if (!this.channel) await this.connect();
+  async publish(routingKey, payload) {
+    await this.connect();
 
     this.channel.publish(
       this.exchange,
       routingKey,
-      Buffer.from(JSON.stringify(data)),
+      Buffer.from(JSON.stringify(payload)),
       { persistent: true }
     );
 
-    console.log("📤 Published:", routingKey, data);
+    console.log(`📤 [Kitchen] Event emitted: ${routingKey}`, payload);
   }
 }
 
