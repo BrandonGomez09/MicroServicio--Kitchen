@@ -1,11 +1,11 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const Location = require('./LocationModel');
-const KitchenResponsible = require('./KitchenResponsibleModel');
-const KitchenSchedule = require('./KitchenScheduleModel');
+const { DataTypes } = require("sequelize");
+const sequelize = require("../config/database");
+const Location = require("./LocationModel");
+const KitchenResponsible = require("./KitchenResponsibleModel");
+const KitchenSchedule = require("./KitchenScheduleModel");
 
 const Kitchen = sequelize.define(
-  'Kitchen',
+  "Kitchen",
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
 
@@ -24,8 +24,8 @@ const Kitchen = sequelize.define(
     registrationDate: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
 
     approvalStatus: {
-      type: DataTypes.ENUM('pending', 'approved', 'rejected'),
-      defaultValue: 'pending'
+      type: DataTypes.ENUM("pending", "approved", "rejected"),
+      defaultValue: "pending"
     },
 
     approvedBy: { type: DataTypes.INTEGER, allowNull: true },
@@ -35,7 +35,7 @@ const Kitchen = sequelize.define(
     isActive: { type: DataTypes.BOOLEAN, defaultValue: false }
   },
   {
-    tableName: 'kitchens',
+    tableName: "kitchens",
     timestamps: false
   }
 );
@@ -57,7 +57,7 @@ KitchenResponsible.belongsTo(Kitchen, {
 
 Kitchen.hasMany(KitchenSchedule, {
   foreignKey: "kitchenId",
-  as: "schedule"
+  as: "schedules" 
 });
 
 KitchenSchedule.belongsTo(Kitchen, {

@@ -15,7 +15,8 @@ class Kitchen {
     rejectionReason,
     isActive,
     responsible = null,
-    location = null
+    location = null,
+    schedules = []
   }) {
     this.id = id;
     this.name = name;
@@ -34,6 +35,7 @@ class Kitchen {
 
     this.responsible = responsible;
     this.location = location;
+    this.schedules = schedules;   
   }
 
   toJSON() {
@@ -53,7 +55,8 @@ class Kitchen {
       rejectionReason: this.rejectionReason,
       isActive: this.isActive,
       responsible: this.responsible,
-      location: this.location
+      location: this.location,
+      schedules: this.schedules    
     };
   }
 }

@@ -1,7 +1,6 @@
 const KitchenModel = require('../models/KitchenModel');
 const KitchenResponsibleModel = require('../models/KitchenResponsibleModel');
 const LocationModel = require('../models/LocationModel');
-const KitchenScheduleModel = require('../models/KitchenScheduleModel');
 
 const Kitchen = require('../../../domain/entities/Kitchen');
 
@@ -19,8 +18,7 @@ class SequelizeKitchenRepository {
     return new Kitchen({
       ...json,
       responsible: json.responsible || null,
-      location: json.location || null,
-      schedule: json.schedule || []
+      location: json.location || null
     });
   }
 
@@ -44,13 +42,8 @@ class SequelizeKitchenRepository {
     const result = await KitchenModel.findOne({
       where: { id },
       include: [
-        {
-          model: KitchenResponsibleModel,
-          as: "responsible",
-          attributes: { exclude: ["password"] }
-        },
-        { model: LocationModel, as: "location" },
-        { model: KitchenScheduleModel, as: "schedule" }
+        { model: KitchenResponsibleModel, as: "responsible", attributes: { exclude: ["password"] }},
+        { model: LocationModel, as: "location" }
       ]
     });
 
@@ -66,13 +59,8 @@ class SequelizeKitchenRepository {
     const result = await KitchenModel.findAll({
       where: { approvalStatus: status },
       include: [
-        {
-          model: KitchenResponsibleModel,
-          as: "responsible",
-          attributes: { exclude: ["password"] }
-        },
-        { model: LocationModel, as: "location" },
-        { model: KitchenScheduleModel, as: "schedule" }
+        { model: KitchenResponsibleModel, as: "responsible", attributes: { exclude: ["password"] }},
+        { model: LocationModel, as: "location" }
       ]
     });
 
@@ -94,17 +82,8 @@ class SequelizeKitchenRepository {
   async findByLocationIds(stateId, municipalityId) {
     const result = await KitchenModel.findAll({
       include: [
-        {
-          model: LocationModel,
-          as: "location",
-          where: { stateId, municipalityId }
-        },
-        {
-          model: KitchenResponsibleModel,
-          as: "responsible",
-          attributes: { exclude: ["password"] }
-        },
-        { model: KitchenScheduleModel, as: "schedule" }
+        { model: LocationModel, as: "location", where: { stateId, municipalityId }},
+        { model: KitchenResponsibleModel, as: "responsible", attributes: { exclude: ["password"] }}
       ]
     });
 

@@ -18,6 +18,8 @@ const CreateKitchenScheduleUseCase = require('../../../application/use-cases/Cre
 const UpdateKitchenScheduleUseCase = require('../../../application/use-cases/UpdateKitchenScheduleUseCase');
 const GetKitchenScheduleUseCase = require('../../../application/use-cases/GetKitchenScheduleUseCase');
 
+const UpdateKitchenInfoUseCase = require('../../../application/use-cases/UpdateKitchenInfoUseCase');
+
 const rabbitMQPublisher = require('../../adapters/RabbitMQPublisher');
 
 const kitchenRepository = new SequelizeKitchenRepository();
@@ -70,5 +72,9 @@ module.exports = {
   getKitchenScheduleUseCase: new GetKitchenScheduleUseCase(
     scheduleRepository,
     kitchenRepository
+  ),
+
+  updateKitchenInfoUseCase: new UpdateKitchenInfoUseCase(
+    kitchenRepository,
   )
 };
