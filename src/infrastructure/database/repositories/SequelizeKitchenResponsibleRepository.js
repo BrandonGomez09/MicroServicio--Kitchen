@@ -1,34 +1,44 @@
-const KitchenResponsibleModel = require('../models/KitchenResponsibleModel');
-const KitchenResponsible = require('../../../domain/entities/KitchenResponsible');
+const KitchenResponsibleModel = require("../models/KitchenResponsibleModel");
 
-class SequelizeKitchenResponsibleRepository {
-  _toDomain(model) {
-    if (!model) return null;
-    return new KitchenResponsible(model.toJSON());
+class SequelizeResponsibleRepository {
+  async create(data) {
+    return await KitchenResponsibleModel.create({
+      kitchenId: data.kitchenId,
+      names: data.names,
+      firstLastName: data.firstLastName,
+      secondLastName: data.secondLastName,
+      email: data.email,
+      phoneNumber: data.phoneNumber,
+      password: data.password, 
+      userId: data.userId ?? null 
+    });
   }
 
-  async create(data) {
-    const created = await KitchenResponsibleModel.create({
-      kitchen_id: data.kitchen_id,
-      names: data.names,
-      first_last_name: data.first_last_name,
-      second_last_name: data.second_last_name || null,
-      email: data.email,
-      phone_number: data.phone_number
-    });
-
-    return new KitchenResponsible({
-      ...created.toJSON(),
-      password: data.password
-    });
+  async findById(id) {
+    return await KitchenResponsibleModel.findByPk(id);
   }
 
   async findByKitchenId(kitchenId) {
-    const model = await KitchenResponsibleModel.findOne({
-      where: { kitchen_id: kitchenId }
+    return await KitchenResponsibleModel.findOne({
+      where: { kitchenId }
     });
-    return this._toDomain(model);
+  }
+
+  async update(id, data) {
+    await KitchenResponsibleModel.update(data, { where: { id } });
+    return await this.findById(id);
+  }
+
+  async updateByKitchenId(kitchenId, data) {
+    await KitchenResponsibleModel.update(data, { where: { kitchenId } });
+    return await this.findByKitchenId(kitchenId);
+  }
+
+  async delete(id) {
+    return await KitchenResponsibleModel.destroy({
+      where: { id }
+    });
   }
 }
 
-module.exports = SequelizeKitchenResponsibleRepository;
+module.exports = SequelizeResponsibleRepository;

@@ -1,47 +1,29 @@
 class UpdateKitchenInfoUseCase {
-  constructor(kitchenRepository, locationRepository) {
+  constructor(kitchenRepository) {
     this.kitchenRepository = kitchenRepository;
-    this.locationRepository = locationRepository;
   }
 
   async execute(adminUserId, kitchenId, data) {
     const {
-      name,
       description,
       contactPhone,
       contactEmail,
-      imageUrl,
-      location: {
-        streetAddress,
-        neighborhood,
-        postalCode,
-        stateId,
-        municipalityId
-      }
+      imageUrl
     } = data;
 
     const kitchen = await this.kitchenRepository.findById(kitchenId);
-    if (!kitchen) throw { http_status: 404, message: "Cocina no encontrada" };
+    if (!kitchen) throw { http_status: 404, message: "Kitchen not found" };
 
-    const ownerId = await this.kitchenRepository.findOwnerIdByKitchenId(kitchenId);
+    const ownerId = kitchen.ownerId;
     if (ownerId !== adminUserId) {
-      throw { http_status: 403, message: "No puedes editar una cocina que no te pertenece" };
+      throw { http_status: 403, message: "Not your kitchen" };
     }
 
-    await this.locationRepository.update(kitchen.locationId, {
-      street_address: streetAddress,
-      neighborhood,
-      postal_code: postalCode,
-      state_id: stateId,
-      municipality_id: municipalityId
-    });
-
     const updatedKitchen = await this.kitchenRepository.update(kitchenId, {
-      name,
       description,
-      contact_phone: contactPhone,
-      contact_email: contactEmail,
-      image_url: imageUrl ?? null
+      contactPhone,
+      contactEmail,
+      imageUrl
     });
 
     return updatedKitchen;

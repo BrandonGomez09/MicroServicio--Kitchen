@@ -1,55 +1,68 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database'); 
-
-const Location = require('./LocationModel');
-const KitchenSchedule = require('./KitchenScheduleModel'); // ← NUEVO
+const { DataTypes } = require("sequelize");
+const sequelize = require("../config/database");
+const Location = require("./LocationModel");
+const KitchenResponsible = require("./KitchenResponsibleModel");
+const KitchenSchedule = require("./KitchenScheduleModel");
 
 const Kitchen = sequelize.define(
-  'Kitchen',
+  "Kitchen",
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+
     name: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: false },
-    owner_id: { type: DataTypes.INTEGER, allowNull: false },
 
-    location_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: { model: 'locations', key: 'id' },
+    ownerId: { type: DataTypes.INTEGER, allowNull: false },
+
+    locationId: { type: DataTypes.INTEGER, allowNull: false },
+
+    contactPhone: { type: DataTypes.STRING, allowNull: false },
+    contactEmail: { type: DataTypes.STRING, allowNull: false },
+
+    imageUrl: { type: DataTypes.STRING, allowNull: true },
+
+    registrationDate: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+
+    approvalStatus: {
+      type: DataTypes.ENUM("pending", "approved", "rejected"),
+      defaultValue: "pending"
     },
 
-    contact_phone: { type: DataTypes.STRING, allowNull: false },
-    contact_email: { type: DataTypes.STRING, allowNull: false },
-    image_url: { type: DataTypes.STRING },
-    registration_date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+    approvedBy: { type: DataTypes.INTEGER, allowNull: true },
+    approvalDate: { type: DataTypes.DATE, allowNull: true },
+    rejectionReason: { type: DataTypes.TEXT, allowNull: true },
 
-    approval_status: {
-      type: DataTypes.ENUM('pending', 'approved', 'rejected'),
-      defaultValue: 'pending'
-    },
-
-    approved_by: { type: DataTypes.INTEGER },
-    approval_date: { type: DataTypes.DATE },
-    rejection_reason: { type: DataTypes.TEXT },
-    is_active: { type: DataTypes.BOOLEAN, defaultValue: false }
+    isActive: { type: DataTypes.BOOLEAN, defaultValue: false }
   },
   {
-    tableName: 'kitchens',
-    timestamps: false,
+    tableName: "kitchens",
+    timestamps: false
   }
 );
 
-Kitchen.belongsTo(Location, { foreignKey: 'location_id', as: 'location' });
-Location.hasMany(Kitchen, { foreignKey: 'location_id', as: 'kitchens' });
+Kitchen.belongsTo(Location, {
+  foreignKey: "locationId",
+  as: "location"
+});
 
-Kitchen.hasOne(KitchenSchedule, {
-  foreignKey: 'kitchen_id',
-  as: 'schedule'
+Kitchen.hasOne(KitchenResponsible, {
+  foreignKey: "kitchenId",
+  as: "responsible"
+});
+
+KitchenResponsible.belongsTo(Kitchen, {
+  foreignKey: "kitchenId",
+  as: "kitchen"
+});
+
+Kitchen.hasMany(KitchenSchedule, {
+  foreignKey: "kitchenId",
+  as: "schedules" 
 });
 
 KitchenSchedule.belongsTo(Kitchen, {
-  foreignKey: 'kitchen_id',
-  as: 'kitchen'
+  foreignKey: "kitchenId",
+  as: "kitchen"
 });
 
 module.exports = Kitchen;

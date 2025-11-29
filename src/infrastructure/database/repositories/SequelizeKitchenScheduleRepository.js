@@ -1,34 +1,30 @@
-const KitchenScheduleModel = require('../models/KitchenScheduleModel');
-const KitchenSchedule = require('../../../domain/entities/KitchenSchedule');
+const KitchenScheduleModel = require("../models/KitchenScheduleModel");
 
 class SequelizeKitchenScheduleRepository {
-  _toDomain(model) {
-    if (!model) return null;
-    return new KitchenSchedule(model.toJSON());
-  }
-
   async create(schedule) {
-    const newRow = await KitchenScheduleModel.create({
-      kitchen_id: schedule.kitchenId,
+    return await KitchenScheduleModel.create({
+      kitchenId: schedule.kitchenId,
       day: schedule.day,
-      start_time: schedule.startTime,
-      end_time: schedule.endTime
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      isActive: true
     });
-
-    return this._toDomain(newRow);
   }
 
   async findByKitchenId(kitchenId) {
-    const rows = await KitchenScheduleModel.findAll({
-      where: { kitchen_id: kitchenId }
+    return await KitchenScheduleModel.findAll({
+      where: { kitchenId }
     });
+  }
 
-    return rows.map(r => this._toDomain(r));
+  async update(kitchenId, data) {
+    await KitchenScheduleModel.update(data, { where: { kitchenId } });
+    return this.findByKitchenId(kitchenId);
   }
 
   async deleteByKitchenId(kitchenId) {
     await KitchenScheduleModel.destroy({
-      where: { kitchen_id: kitchenId }
+      where: { kitchenId }
     });
   }
 }

@@ -11,6 +11,10 @@ class SequelizeKitchenRepository {
 
     const json = model.toJSON();
 
+    if (json.responsible) {
+      delete json.responsible.password;
+    }
+
     return new Kitchen({
       ...json,
       responsible: json.responsible || null,
@@ -22,16 +26,13 @@ class SequelizeKitchenRepository {
     const newKitchen = await KitchenModel.create({
       name: data.name,
       description: data.description,
-      owner_id: data.owner_id ?? 0,
-      location_id: data.location_id,
-
-      // 👇 CORRECCIÓN CRÍTICA (mapeo correcto)
-      contact_phone: data.contactPhone ?? data.contact_phone,
-      contact_email: data.contactEmail ?? data.contact_email,
-
-      image_url: data.imageUrl ?? data.image_url ?? null,
-      approval_status: 'pending',
-      is_active: false
+      ownerId: data.ownerId ?? 0,
+      locationId: data.locationId,
+      contactPhone: data.contactPhone,
+      contactEmail: data.contactEmail,
+      imageUrl: data.imageUrl ?? null,
+      approvalStatus: 'pending',
+      isActive: false
     });
 
     return this._toDomain(newKitchen);
@@ -41,8 +42,8 @@ class SequelizeKitchenRepository {
     const result = await KitchenModel.findOne({
       where: { id },
       include: [
-        { model: KitchenResponsibleModel, as: 'responsible' },
-        { model: LocationModel, as: 'location' }
+        { model: KitchenResponsibleModel, as: "responsible", attributes: { exclude: ["password"] }},
+        { model: LocationModel, as: "location" }
       ]
     });
 
@@ -54,36 +55,35 @@ class SequelizeKitchenRepository {
     return this.findById(id);
   }
 
-  async findPending() {
+  async findByStatus(status) {
     const result = await KitchenModel.findAll({
-      where: { approval_status: 'pending' },
+      where: { approvalStatus: status },
       include: [
-        { model: KitchenResponsibleModel, as: 'responsible' },
-        { model: LocationModel, as: 'location' }
+        { model: KitchenResponsibleModel, as: "responsible", attributes: { exclude: ["password"] }},
+        { model: LocationModel, as: "location" }
       ]
     });
 
     return result.map(r => this._toDomain(r));
+  }
+
+  async findPending() {
+    return this.findByStatus("pending");
   }
 
   async findApproved() {
-    const result = await KitchenModel.findAll({
-      where: { approval_status: 'approved' },
-      include: [
-        { model: KitchenResponsibleModel, as: 'responsible' },
-        { model: LocationModel, as: 'location' }
-      ]
-    });
-
-    return result.map(r => this._toDomain(r));
+    return this.findByStatus("approved");
   }
 
   async findRejected() {
+    return this.findByStatus("rejected");
+  }
+
+  async findByLocationIds(stateId, municipalityId) {
     const result = await KitchenModel.findAll({
-      where: { approval_status: 'rejected' },
       include: [
-        { model: KitchenResponsibleModel, as: 'responsible' },
-        { model: LocationModel, as: 'location' }
+        { model: LocationModel, as: "location", where: { stateId, municipalityId }},
+        { model: KitchenResponsibleModel, as: "responsible", attributes: { exclude: ["password"] }}
       ]
     });
 

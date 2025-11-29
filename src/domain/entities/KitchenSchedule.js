@@ -26,7 +26,6 @@ class KitchenSchedule {
       throw new Error("Payload must include 'weekdays' and 'weekend'");
     }
 
-    // Weekdays (same schedule)
     for (const day of weekdays) {
       result.push(
         new KitchenSchedule({
@@ -38,7 +37,6 @@ class KitchenSchedule {
       );
     }
 
-    // Weekend (same schedule)
     for (const day of weekend) {
       result.push(
         new KitchenSchedule({
@@ -55,12 +53,12 @@ class KitchenSchedule {
 
   _validateDay() {
     const validDays = [
-      "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY",
-      "SATURDAY", "SUNDAY"
+      "MONDAY", "TUESDAY", "WEDNESDAY",
+      "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"
     ];
 
     if (!validDays.includes(this.day)) {
-      throw new Error(`Invalid day '${this.day}'. Must be full uppercase name.`);
+      throw new Error(`Invalid day '${this.day}'. Must be uppercase FULL name.`);
     }
   }
 
@@ -68,7 +66,7 @@ class KitchenSchedule {
     const regex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
     if (!regex.test(this.startTime) || !regex.test(this.endTime)) {
-      throw new Error(`Invalid time format for day ${this.day}. Use HH:MM in 24h format.`);
+      throw new Error(`Invalid time format for day ${this.day}. Use HH:MM 24h format.`);
     }
 
     if (this.startTime >= this.endTime) {

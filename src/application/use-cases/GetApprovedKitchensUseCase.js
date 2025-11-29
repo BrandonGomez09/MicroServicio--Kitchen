@@ -4,8 +4,7 @@ class GetApprovedKitchensUseCase {
   }
 
   async execute() {
-    const approvedKitchens = await this.kitchenRepository.findByStatus('approved');
-    return approvedKitchens;
+    return await this.kitchenRepository.findByStatus("approved");
   }
 }
 

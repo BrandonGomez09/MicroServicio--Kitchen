@@ -16,13 +16,15 @@ class KitchenScheduleController {
 
       res.status(201).json({
         success: true,
-        message: "Horarios creados correctamente",
+        message: 'Horarios creados correctamente',
         data: schedules
       });
     } catch (err) {
+      console.error('❌ Error en create schedule:', err);
+
       res.status(400).json({
         success: false,
-        message: err.message
+        message: err.message || String(err)
       });
     }
   }
@@ -38,13 +40,15 @@ class KitchenScheduleController {
 
       res.status(200).json({
         success: true,
-        message: "Horarios actualizados correctamente",
+        message: 'Horarios actualizados correctamente',
         data: schedules
       });
     } catch (err) {
+      console.error('❌ Error en update schedule:', err);
+
       res.status(400).json({
         success: false,
-        message: err.message
+        message: err.message || String(err)
       });
     }
   }
@@ -55,9 +59,13 @@ class KitchenScheduleController {
       const schedules = await getKitchenScheduleUseCase.execute(kitchenId);
 
       res.status(200).json({ success: true, data: schedules });
-
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      console.error('❌ Error en get schedule:', err);
+
+      res.status(400).json({
+        success: false,
+        message: err.message || String(err)
+      });
     }
   }
 }

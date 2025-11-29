@@ -5,21 +5,20 @@ class RejectKitchenUseCase {
   }
 
   async execute(kitchenId, reason, adminUserId) {
-
     const kitchen = await this.kitchenRepository.findById(kitchenId);
-    if (!kitchen) throw new Error("Cocina no encontrada");
+    if (!kitchen) throw new Error("Kitchen not found");
 
     const updatedKitchen = await this.kitchenRepository.update(kitchenId, {
-      approval_status: "rejected",
-      rejection_reason: reason,
-      is_active: false,
-      approved_by: null,
-      approval_date: null
+      approvalStatus: "rejected",
+      rejectionReason: reason,
+      isActive: false,
+      approvedBy: null,
+      approvalDate: null
     });
 
     await this.eventPublisher.publish("kitchen.rejected", {
       kitchenId: updatedKitchen.id,
-      ownerId: updatedKitchen.owner_id,
+      ownerId: updatedKitchen.ownerId,
       kitchenName: updatedKitchen.name,
       rejectionReason: reason,
       rejectedBy: adminUserId,

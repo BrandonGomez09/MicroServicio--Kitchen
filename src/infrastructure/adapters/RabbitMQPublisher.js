@@ -1,39 +1,35 @@
-const amqp = require('amqplib');
+const amqp = require("amqplib");
+const rabbitmqConfig = require("../database/config/rabbitmq.config");
 
 class RabbitMQPublisher {
   constructor() {
-    this.connection = null;
+    this.exchange = rabbitmqConfig.exchange;
+    this.conn = null;
     this.channel = null;
-    this.exchange = process.env.RABBITMQ_EXCHANGE || 'bim_exchange';
   }
 
   async connect() {
-    if (this.connection) return;
-    try {
-      const url = process.env.RABBITMQ_URL;
-      if (!url) throw new Error('❌ RABBITMQ_URL no está definida en .env');
+    if (this.channel) return;
 
-      console.log('🐇 [KITCHEN] Conectando a RabbitMQ...');
-      this.connection = await amqp.connect(url);
-      this.channel = await this.connection.createChannel();
-      await this.channel.assertExchange(this.exchange, 'topic', { durable: true });
-      console.log('✅ [KITCHEN] Conectado a RabbitMQ correctamente');
-    } catch (error) {
-      console.error('❌ [KITCHEN] Error conectando a RabbitMQ:', error);
-    }
+    this.conn = await amqp.connect(rabbitmqConfig.url);
+    this.channel = await this.conn.createChannel();
+
+    await this.channel.assertExchange(this.exchange, "topic", { durable: true });
+
+    console.log("🐇 [Kitchen] RabbitMQ Publisher connected");
   }
 
   async publish(routingKey, payload) {
-    try {
-      if (!this.channel) await this.connect();
+    await this.connect();
 
-      const message = Buffer.from(JSON.stringify(payload));
-      this.channel.publish(this.exchange, routingKey, message, { persistent: true });
+    this.channel.publish(
+      this.exchange,
+      routingKey,
+      Buffer.from(JSON.stringify(payload)),
+      { persistent: true }
+    );
 
-      console.log(`📤 [KITCHEN] Evento publicado → ${routingKey}`, payload);
-    } catch (error) {
-      console.error(`❌ [KITCHEN] Error al publicar evento ${routingKey}:`, error);
-    }
+    console.log(`📤 [Kitchen] Event emitted: ${routingKey}`, payload);
   }
 }
 

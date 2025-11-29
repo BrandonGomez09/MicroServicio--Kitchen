@@ -1,19 +1,33 @@
 class GetKitchenDetailsUseCase {
-  constructor(kitchenRepository, locationRepository) {
+  constructor(kitchenRepository) {
     this.kitchenRepository = kitchenRepository;
-    this.locationRepository = locationRepository;
   }
 
   async execute(kitchenId) {
     const kitchen = await this.kitchenRepository.findById(kitchenId);
-    if (!kitchen) throw new Error("Cocina no encontrada");
+    if (!kitchen) throw new Error("Kitchen not found");
 
-    const location = kitchen.location_id
-      ? await this.locationRepository.findById(kitchen.location_id)
-      : null;
-
-    return { kitchen, location };
+    return {
+      kitchen: {
+        id: kitchen.id,
+        name: kitchen.name,
+        description: kitchen.description,
+        ownerId: kitchen.ownerId,
+        locationId: kitchen.locationId,
+        contactPhone: kitchen.contactPhone,
+        contactEmail: kitchen.contactEmail,
+        imageUrl: kitchen.imageUrl,
+        registrationDate: kitchen.registrationDate,
+        approvalStatus: kitchen.approvalStatus,
+        approvedBy: kitchen.approvedBy,
+        approvalDate: kitchen.approvalDate,
+        rejectionReason: kitchen.rejectionReason,
+        isActive: kitchen.isActive,
+        responsible: kitchen.responsible || null,
+        location: kitchen.location || null
+      }
+    };
   }
 }
 
-module.exports = GetKitchenDetailsUseCase;  
+module.exports = GetKitchenDetailsUseCase;

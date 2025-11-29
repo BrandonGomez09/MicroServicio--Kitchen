@@ -1,39 +1,54 @@
-const { getTemporaryPassword, clearTemporaryPassword } = require("../../infrastructure/store/temp-password.store");
+const rabbitmqConfig = require("../../infrastructure/database/config/rabbitmq.config");
 
 class ApproveKitchenUseCase {
-  constructor(kitchenRepository, responsibleRepository, eventPublisher) {
+  constructor(kitchenRepository, responsibleRepository, publisher) {
     this.kitchenRepository = kitchenRepository;
     this.responsibleRepository = responsibleRepository;
-    this.eventPublisher = eventPublisher;
+    this.publisher = publisher;
   }
 
   async execute(kitchenId) {
     const kitchen = await this.kitchenRepository.findById(kitchenId);
-    if (!kitchen) throw { http_status: 404, message: "Kitchen not found" };
+    if (!kitchen) {
+      throw { http_status: 404, message: "Kitchen not found" };
+    }
 
     const responsible = await this.responsibleRepository.findByKitchenId(kitchenId);
-    if (!responsible) throw { http_status: 500, message: "Kitchen responsible not found" };
+    if (!responsible) {
+      throw { http_status: 400, message: "Responsible user not found" };
+    }
 
-    const password = getTemporaryPassword(kitchenId);
-    if (!password) throw { http_status: 500, message: "Temporary password missing" };
+    if (!responsible.password) {
+      throw { http_status: 500, message: "Missing encrypted password for responsible user" };
+    }
 
-    kitchen.approvalStatus = "approved";
-    kitchen.isActive = true;
-
-    const updatedKitchen = await this.kitchenRepository.update(kitchenId, kitchen);
-
-    await this.eventPublisher.publish("kitchen.admin.registered", {
-      names: responsible.names,
-      firstLastName: responsible.firstLast_name,
-      secondLastName: responsible.secondLast_name,
-      email: responsible.email,
-      phoneNumber: responsible.phone_number,
-      password
+    await this.kitchenRepository.update(kitchenId, {
+      approvalStatus: "approved",
+      approvalDate: new Date(),
+      isActive: true
     });
 
-    clearTemporaryPassword(kitchenId);
+    const eventPayload = {
+      kitchenId,
+      names: responsible.names,
+      firstLastName: responsible.firstLastName,
+      secondLastName: responsible.secondLastName,
+      email: responsible.email,
+      phoneNumber: responsible.phoneNumber,
+      password: responsible.password 
+    };
 
-    return updatedKitchen;
+    await this.publisher.publish(
+      rabbitmqConfig.routingKeys.kitchenAdminRegistered,
+      eventPayload
+    );
+
+    console.log("📤 [Kitchen] Event 'kitchen.admin.registered' sent:", eventPayload);
+
+    return {
+      success: true,
+      message: "Kitchen approved and event emitted"
+    };
   }
 }
 

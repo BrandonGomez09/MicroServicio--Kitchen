@@ -1,21 +1,13 @@
 class GetNearbyKitchensUseCase {
-
-  constructor(kitchenRepository, locationRepository) {
+  constructor(kitchenRepository) {
     this.kitchenRepository = kitchenRepository;
-    this.locationRepository = locationRepository;
   }
 
   async execute({ stateId, municipalityId }) {
-    const locations = await this.locationRepository.findByStateAndMunicipality(
+    return await this.kitchenRepository.findByLocationIds(
       stateId,
       municipalityId
     );
-
-    const ids = locations.map(l => l.id);
-
-    const kitchens = await this.kitchenRepository.findByLocationIds(ids);
-
-    return kitchens;
   }
 }
 

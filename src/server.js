@@ -5,6 +5,7 @@ const publisher = require('./infrastructure/adapters/RabbitMQPublisher');
 require('./infrastructure/database/models/LocationModel');
 require('./infrastructure/database/models/KitchenModel');
 
+const kitchenUserSyncConsumer = require("./infrastructure/adapters/KitchenUserSyncConsumer");
 
 const PORT = process.env.PORT;
 
@@ -25,6 +26,9 @@ async function startServer() {
 
     await publisher.connect();
     console.log('🐇 RabbitMQ conectado correctamente (Publisher listo).');
+
+    await kitchenUserSyncConsumer.start();
+    console.log("📥 [Kitchen] User Sync Consumer started");
 
     app.listen(PORT, () => {
       console.log(`🌐 Servidor corriendo en el puerto ${PORT}`);
