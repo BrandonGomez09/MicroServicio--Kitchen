@@ -16,7 +16,9 @@ module.exports = {
 
     kitchenAdminUserSynced:
       process.env.RABBITMQ_ROUTINGKEY_KITCHEN_ADMIN_USER_SYNCED ||
-      "kitchen.admin.userId.synced"
+      "kitchen.admin.userId.synced",
+      
+    paymentAccountCreated: "payment.kitchen.created"
   },
 
   options: {
