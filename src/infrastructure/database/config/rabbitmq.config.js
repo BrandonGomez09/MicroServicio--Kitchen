@@ -2,7 +2,7 @@ require("dotenv").config();
 
 module.exports = {
   url: process.env.RABBITMQ_URL || "",
-  exchange: process.env.RABBITMQ_EXCHANGE || "auth_events",
+  exchange: process.env.RABBITMQ_EXCHANGE || "kitchen_events",
   exchangeType: "topic",
 
   queues: {
@@ -16,7 +16,19 @@ module.exports = {
 
     kitchenAdminUserSynced:
       process.env.RABBITMQ_ROUTINGKEY_KITCHEN_ADMIN_USER_SYNCED ||
-      "kitchen.admin.userId.synced"
+      "kitchen.admin.userId.synced",
+
+    kitchenPending:
+      process.env.RABBITMQ_ROUTINGKEY_KITCHEN_PENDING ||
+      "kitchen.pending",
+
+    kitchenApproved:
+      process.env.RABBITMQ_ROUTINGKEY_KITCHEN_APPROVED ||
+      "kitchen.approved",
+
+    kitchenRejected:
+      process.env.RABBITMQ_ROUTINGKEY_KITCHEN_REJECTED ||
+      "kitchen.rejected"
   },
 
   options: {
