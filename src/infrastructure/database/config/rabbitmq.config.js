@@ -32,8 +32,7 @@ module.exports = {
 
     paymentAccountCreated:
       process.env.RABBITMQ_ROUTINGKEY_PAYMENT_ACCOUNT_CREATED ||
-      "payment.kitchen.created"
-    
+      "payment.kitchen.created",
     paymentAccountCreated: "payment.kitchen.created"
   },
 
