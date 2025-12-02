@@ -31,6 +31,7 @@ const Kitchen = sequelize.define(
     approvedBy: { type: DataTypes.INTEGER, allowNull: true },
     approvalDate: { type: DataTypes.DATE, allowNull: true },
     rejectionReason: { type: DataTypes.TEXT, allowNull: true },
+    stripeCustomerId: { type: DataTypes.STRING, allowNull: true },
 
     isActive: { type: DataTypes.BOOLEAN, defaultValue: false }
   },
