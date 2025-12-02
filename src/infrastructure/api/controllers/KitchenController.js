@@ -7,21 +7,27 @@ const {
   getRejectedKitchensUseCase,
   getNearbyKitchensUseCase,
   getKitchenDetailsUseCase,
-  updateKitchenInfoUseCase
+  updateKitchenInfoUseCase,
+  // Nuevos casos de uso
+  subscribeToKitchenUseCase,
+  getKitchenSubscribersUseCase,
+  getMyKitchensUseCase,
+  getMyKitchenUseCase // <--- Importado
 } = require('../dependencies/dependencies');
 
 class KitchenController {
+  
+  // --- GESTIÓN DE COCINAS ---
+
   async requestKitchen(req, res) {
     try {
       const result = await requestKitchenUseCase.execute(req.body);
-
       res.status(201).json({
         success: true,
         data: result
       });
     } catch (err) {
       console.error('❌ Error en requestKitchen:', err);
-
       res.status(500).json({
         success: false,
         message: 'Error al registrar cocina',
@@ -63,12 +69,10 @@ class KitchenController {
   async getNearbyKitchens(req, res) {
     try {
       const { stateId, municipalityId } = req.user;
-
       const kitchens = await getNearbyKitchensUseCase.execute({
         stateId,
         municipalityId
       });
-
       res.status(200).json({ success: true, data: kitchens });
     } catch (err) {
       console.error('❌ Error en getNearbyKitchens:', err);
@@ -84,7 +88,6 @@ class KitchenController {
       res.status(200).json({ success: true, data: result });
     } catch (err) {
       console.error('❌ Error en approveKitchen:', err);
-
       res.status(err.http_status || 500).json({
         success: false,
         message: 'Error al aprobar cocina',
@@ -98,17 +101,14 @@ class KitchenController {
       const kitchenId = req.params.id;
       const reason = req.body.reason;
       const adminUserId = req.user?.id || null;
-
       const result = await rejectKitchenUseCase.execute(
         kitchenId,
         reason,
         adminUserId
       );
-
       res.status(200).json({ success: true, data: result });
     } catch (err) {
       console.error('❌ Error en rejectKitchen:', err);
-
       res.status(err.http_status || 500).json({
         success: false,
         message: 'Error al rechazar cocina',
@@ -128,7 +128,6 @@ class KitchenController {
         kitchenId,
         updates
       );
-
       res.status(200).json({
         success: true,
         message: 'Cocina actualizada correctamente',
@@ -136,7 +135,6 @@ class KitchenController {
       });
     } catch (err) {
       console.error('❌ Error en updateKitchen:', err);
-
       res.status(err.http_status || 500).json({
         success: false,
         message: err.message || 'Error al actualizar la cocina'
@@ -152,11 +150,94 @@ class KitchenController {
       res.status(200).json({ success: true, data });
     } catch (err) {
       console.error('❌ Error en getKitchenDetails:', err);
-
       res.status(err.http_status || 500).json({
         success: false,
         message: 'Error al obtener detalles de la cocina',
         error: err.message || String(err)
+      });
+    }
+  }
+
+  // --- NUEVOS MÉTODOS DE SUSCRIPCIÓN Y UTILIDAD ---
+
+  // 1. Suscribirse a una cocina (Voluntario)
+  async subscribe(req, res) {
+    try {
+      const kitchenId = req.params.id;
+      const userId = req.user.id; 
+
+      const result = await subscribeToKitchenUseCase.execute(userId, kitchenId);
+      
+      res.status(201).json({ 
+        success: true, 
+        message: 'Suscripción exitosa',
+        data: result 
+      });
+    } catch (err) {
+      console.error('❌ Error en subscribe:', err);
+      res.status(err.http_status || 500).json({
+        success: false,
+        message: err.message || 'Error al suscribirse'
+      });
+    }
+  }
+
+  // 2. Ver suscriptores (Admin Cocina)
+  async getSubscribers(req, res) {
+    try {
+      const kitchenId = req.params.id;
+      const user = req.user; // Pasamos el usuario completo para validar roles
+      const token = req.headers.authorization;
+
+      const subscribers = await getKitchenSubscribersUseCase.execute(user, kitchenId, token);
+      
+      res.status(200).json({ 
+        success: true, 
+        data: subscribers 
+      });
+    } catch (err) {
+      console.error('❌ Error en getSubscribers:', err);
+      res.status(err.http_status || 500).json({
+        success: false,
+        message: err.message || 'Error al obtener suscriptores'
+      });
+    }
+  }
+
+  // 3. Ver "Mis Cocinas" (Voluntario)
+  async getMySubscriptions(req, res) {
+    try {
+      const userId = req.user.id;
+      const myKitchens = await getMyKitchensUseCase.execute(userId);
+      
+      res.status(200).json({ 
+        success: true, 
+        data: myKitchens 
+      });
+    } catch (err) {
+      console.error('❌ Error en getMySubscriptions:', err);
+      res.status(err.http_status || 500).json({
+        success: false,
+        message: err.message || 'Error al obtener mis suscripciones'
+      });
+    }
+  }
+
+  // 4. Obtener Mi Cocina (Admin Cocina)
+  async getMyKitchen(req, res) {
+    try {
+      const userId = req.user.id;
+      const kitchen = await getMyKitchenUseCase.execute(userId);
+      
+      res.status(200).json({ 
+        success: true, 
+        data: kitchen 
+      });
+    } catch (err) {
+      console.error('❌ Error en getMyKitchen:', err);
+      res.status(err.http_status || 500).json({
+        success: false,
+        message: err.message || 'Error al obtener mi cocina'
       });
     }
   }
