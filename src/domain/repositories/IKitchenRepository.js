@@ -27,6 +27,11 @@ class IKitchenRepository {
     throw new Error('Método "findRejected" no implementado');
   }
 
+  // --- NUEVO ---
+  async findByOwnerId(ownerId) {
+    throw new Error('Método "findByOwnerId" no implementado');
+  }
+
   async findByLocationIds(locationIds) {
     throw new Error('Método "findByLocationIds" no implementado');
   }

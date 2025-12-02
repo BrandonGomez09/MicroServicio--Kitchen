@@ -3,6 +3,7 @@ const sequelize = require("../config/database");
 const Location = require("./LocationModel");
 const KitchenResponsible = require("./KitchenResponsibleModel");
 const KitchenSchedule = require("./KitchenScheduleModel");
+const KitchenMembership = require("./KitchenMembershipModel"); 
 
 const Kitchen = sequelize.define(
   "Kitchen",
@@ -31,6 +32,7 @@ const Kitchen = sequelize.define(
     approvedBy: { type: DataTypes.INTEGER, allowNull: true },
     approvalDate: { type: DataTypes.DATE, allowNull: true },
     rejectionReason: { type: DataTypes.TEXT, allowNull: true },
+
     stripeCustomerId: { type: DataTypes.STRING, allowNull: true },
 
     isActive: { type: DataTypes.BOOLEAN, defaultValue: false }
@@ -62,6 +64,16 @@ Kitchen.hasMany(KitchenSchedule, {
 });
 
 KitchenSchedule.belongsTo(Kitchen, {
+  foreignKey: "kitchenId",
+  as: "kitchen"
+});
+
+Kitchen.hasMany(KitchenMembership, {
+  foreignKey: "kitchenId",
+  as: "memberships"
+});
+
+KitchenMembership.belongsTo(Kitchen, {
   foreignKey: "kitchenId",
   as: "kitchen"
 });
