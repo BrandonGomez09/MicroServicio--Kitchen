@@ -31,7 +31,8 @@ module.exports = {
   requestKitchenUseCase: new RequestKitchenUseCase(
     kitchenRepository,
     locationRepository,
-    responsibleRepository
+    responsibleRepository,
+    rabbitMQPublisher       
   ),
 
   approveKitchenUseCase: new ApproveKitchenUseCase(
@@ -42,7 +43,8 @@ module.exports = {
 
   rejectKitchenUseCase: new RejectKitchenUseCase(
     kitchenRepository,
-    rabbitMQPublisher
+    responsibleRepository,   
+    rabbitMQPublisher        
   ),
 
   getPendingKitchensUseCase: new GetPendingKitchensUseCase(kitchenRepository),

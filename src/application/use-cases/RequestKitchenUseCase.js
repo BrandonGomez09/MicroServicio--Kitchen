@@ -4,11 +4,14 @@ const bcrypt = require("bcrypt");
 
 const SALT_ROUNDS = Number(process.env.SALT_ROUNDS || 10);
 
+const KitchenEventFactory = require("../../domain/events/KitchenEventFactory");
+
 class RequestKitchenUseCase {
-  constructor(kitchenRepository, locationRepository, responsibleRepository) {
+  constructor(kitchenRepository, locationRepository, responsibleRepository, eventPublisher) {
     this.kitchenRepository = kitchenRepository;
     this.locationRepository = locationRepository;
     this.responsibleRepository = responsibleRepository;
+    this.eventPublisher = eventPublisher;
   }
 
   async execute(dto) {
@@ -20,17 +23,15 @@ class RequestKitchenUseCase {
 
     const encryptedPassword = await bcrypt.hash(responsible.password, SALT_ROUNDS);
 
-    const locationEntity = {
+    const createdLocation = await this.locationRepository.create({
       name: location.neighborhood || location.streetAddress || "Ubicación",
       streetAddress: location.streetAddress,
       neighborhood: location.neighborhood,
       stateId: location.stateId,
       municipalityId: location.municipalityId,
       postalCode: location.postalCode,
-      isActive: true
-    };
-
-    const createdLocation = await this.locationRepository.create(locationEntity);
+      isActive: true,
+    });
 
     const createdKitchen = await this.kitchenRepository.create({
       name: kitchen.name,
@@ -39,20 +40,33 @@ class RequestKitchenUseCase {
       locationId: createdLocation.id,
       contactPhone: kitchen.contactPhone,
       contactEmail: kitchen.contactEmail,
-      imageUrl: kitchen.imageUrl || null
+      imageUrl: kitchen.imageUrl || null,
     });
 
-    await this.responsibleRepository.create({
+    const createdResponsible = await this.responsibleRepository.create({
       kitchenId: createdKitchen.id,
       names: responsible.names,
       firstLastName: responsible.firstLastName,
       secondLastName: responsible.secondLastName,
       email: responsible.email,
       phoneNumber: responsible.phoneNumber,
-      password: encryptedPassword
+      password: encryptedPassword,
     });
 
-    return createdKitchen;
+    const event = KitchenEventFactory.createPendingEvent(
+      createdKitchen,
+      createdResponsible
+    );
+
+    await this.eventPublisher.publish(event.routingKey, event.payload);
+
+    console.log("📤 [Kitchen] Event emitted:", event.routingKey, event.payload);
+
+    return {
+      success: true,
+      message: "Kitchen requested successfully",
+      kitchenId: createdKitchen.id,
+    };
   }
 }
 

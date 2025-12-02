@@ -1,4 +1,5 @@
 const rabbitmqConfig = require("../../infrastructure/database/config/rabbitmq.config");
+const KitchenEventFactory = require("../../domain/events/KitchenEventFactory");
 
 class ApproveKitchenUseCase {
   constructor(kitchenRepository, responsibleRepository, publisher) {
@@ -19,7 +20,10 @@ class ApproveKitchenUseCase {
     }
 
     if (!responsible.password) {
-      throw { http_status: 500, message: "Missing encrypted password for responsible user" };
+      throw {
+        http_status: 500,
+        message: "Missing encrypted password for responsible user"
+      };
     }
 
     await this.kitchenRepository.update(kitchenId, {
@@ -27,8 +31,8 @@ class ApproveKitchenUseCase {
       approvalDate: new Date(),
       isActive: true
     });
-
-    const eventPayload = {
+    
+    const adminRegisterPayload = {
       kitchenId,
       names: responsible.names,
       firstLastName: responsible.firstLastName,
@@ -40,14 +44,32 @@ class ApproveKitchenUseCase {
 
     await this.publisher.publish(
       rabbitmqConfig.routingKeys.kitchenAdminRegistered,
-      eventPayload
+      adminRegisterPayload
     );
 
-    console.log("📤 [Kitchen] Event 'kitchen.admin.registered' sent:", eventPayload);
+    console.log(
+      "📤 [Kitchen] Event 'kitchen.admin.registered' sent:",
+      adminRegisterPayload
+    );
+
+    const approvedEvent = KitchenEventFactory.createApprovedEvent(
+      kitchen,
+      responsible
+    );
+
+    await this.publisher.publish(
+      approvedEvent.routingKey,
+      approvedEvent.payload
+    );
+
+    console.log(
+      `📤 [Kitchen] Event '${approvedEvent.routingKey}' sent:`,
+      approvedEvent.payload
+    );
 
     return {
       success: true,
-      message: "Kitchen approved and event emitted"
+      message: "Kitchen approved, admin creation requested and notifications triggered"
     };
   }
 }
