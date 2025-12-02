@@ -79,6 +79,18 @@ class SequelizeKitchenRepository {
     return this.findByStatus("rejected");
   }
 
+  // --- NUEVO MÉTODO ---
+  async findByOwnerId(ownerId) {
+    const result = await KitchenModel.findOne({
+      where: { ownerId }, // Busca donde el dueño sea el ID del usuario
+      include: [
+        { model: KitchenResponsibleModel, as: "responsible", attributes: { exclude: ["password"] }},
+        { model: LocationModel, as: "location" }
+      ]
+    });
+    return this._toDomain(result);
+  }
+
   async findByLocationIds(stateId, municipalityId) {
     const result = await KitchenModel.findAll({
       include: [
