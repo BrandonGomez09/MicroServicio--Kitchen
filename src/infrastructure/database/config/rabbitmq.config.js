@@ -28,7 +28,11 @@ module.exports = {
 
     kitchenRejected:
       process.env.RABBITMQ_ROUTINGKEY_KITCHEN_REJECTED ||
-      "kitchen.rejected"
+      "kitchen.rejected",
+
+    paymentAccountCreated:
+      process.env.RABBITMQ_ROUTINGKEY_PAYMENT_ACCOUNT_CREATED ||
+      "payment.kitchen.created"
   },
 
   options: {
