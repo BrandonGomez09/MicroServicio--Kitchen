@@ -1,0 +1,15 @@
+services:
+  kitchens-service:
+    container_name: kitchens-service
+    build: .
+    restart: always
+    ports:
+      - "${PORT}:4003"
+    env_file:
+      - .env
+    networks:
+      - shared-network
+
+networks:
+  shared-network:
+    driver: bridge
