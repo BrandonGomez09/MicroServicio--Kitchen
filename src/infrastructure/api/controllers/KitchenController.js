@@ -8,17 +8,15 @@ const {
   getNearbyKitchensUseCase,
   getKitchenDetailsUseCase,
   updateKitchenInfoUseCase,
-  // Nuevos casos de uso
+  unsubscribeFromKitchenUseCase,
   subscribeToKitchenUseCase,
   getKitchenSubscribersUseCase,
   getMyKitchensUseCase,
-  getMyKitchenUseCase // <--- Importado
+  getMyKitchenUseCase 
 } = require('../dependencies/dependencies');
 
 class KitchenController {
   
-  // --- GESTIÓN DE COCINAS ---
-
   async requestKitchen(req, res) {
     try {
       const result = await requestKitchenUseCase.execute(req.body);
@@ -158,9 +156,7 @@ class KitchenController {
     }
   }
 
-  // --- NUEVOS MÉTODOS DE SUSCRIPCIÓN Y UTILIDAD ---
 
-  // 1. Suscribirse a una cocina (Voluntario)
   async subscribe(req, res) {
     try {
       const kitchenId = req.params.id;
@@ -182,11 +178,28 @@ class KitchenController {
     }
   }
 
-  // 2. Ver suscriptores (Admin Cocina)
+  async unsubscribe(req, res) {
+    try {
+      const kitchenId = req.params.id;
+      const userId = req.user.id; 
+
+      const result = await unsubscribeFromKitchenUseCase.execute(userId, kitchenId);
+
+      res.status(200).json(result);
+    } catch (err) {
+      console.error('❌ Error en unsubscribe:', err);
+      res.status(err.http_status || 500).json({
+        success: false,
+        message: err.message || 'Error al desuscribirse'
+      });
+    }
+  }
+
+
   async getSubscribers(req, res) {
     try {
       const kitchenId = req.params.id;
-      const user = req.user; // Pasamos el usuario completo para validar roles
+      const user = req.user; 
       const token = req.headers.authorization;
 
       const subscribers = await getKitchenSubscribersUseCase.execute(user, kitchenId, token);
@@ -204,7 +217,6 @@ class KitchenController {
     }
   }
 
-  // 3. Ver "Mis Cocinas" (Voluntario)
   async getMySubscriptions(req, res) {
     try {
       const userId = req.user.id;
@@ -223,7 +235,6 @@ class KitchenController {
     }
   }
 
-  // 4. Obtener Mi Cocina (Admin Cocina)
   async getMyKitchen(req, res) {
     try {
       const userId = req.user.id;

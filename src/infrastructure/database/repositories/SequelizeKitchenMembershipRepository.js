@@ -53,6 +53,13 @@ class SequelizeKitchenMembershipRepository {
     });
     return this._toDomain(result);
   }
+
+  async delete(userId, kitchenId) {
+    const result = await KitchenMembershipModel.destroy({
+      where: { userId, kitchenId }
+    });
+    return result > 0;
+  }
 }
 
 module.exports = SequelizeKitchenMembershipRepository;

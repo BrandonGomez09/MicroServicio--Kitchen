@@ -26,9 +26,10 @@ const GetKitchenScheduleUseCase = require('../../../application/use-cases/GetKit
 const UpdateKitchenInfoUseCase = require('../../../application/use-cases/UpdateKitchenInfoUseCase');
 
 const SubscribeToKitchenUseCase = require('../../../application/use-cases/SubscribeToKitchenUseCase');
+const UnsubscribeFromKitchenUseCase = require('../../../application/use-cases/UnsubscribeFromKitchenUseCase');
 const GetKitchenSubscribersUseCase = require('../../../application/use-cases/GetKitchenSubscribersUseCase');
-const GetMyKitchensUseCase = require('../../../application/use-cases/GetMyKitchensUseCase'); // Para voluntarios (plural)
-const GetMyKitchenUseCase = require('../../../application/use-cases/GetMyKitchenUseCase');   // Para admin (singular) - NUEVO
+const GetMyKitchensUseCase = require('../../../application/use-cases/GetMyKitchensUseCase'); 
+const GetMyKitchenUseCase = require('../../../application/use-cases/GetMyKitchenUseCase'); 
 
 // Instanciación de Repositorios
 const kitchenRepository = new SequelizeKitchenRepository();
@@ -91,6 +92,11 @@ module.exports = {
   ),
 
   subscribeToKitchenUseCase: new SubscribeToKitchenUseCase(
+    membershipRepository,
+    kitchenRepository
+  ),
+
+  unsubscribeFromKitchenUseCase: new UnsubscribeFromKitchenUseCase(
     membershipRepository,
     kitchenRepository
   ),
