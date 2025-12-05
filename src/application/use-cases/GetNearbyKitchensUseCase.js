@@ -4,9 +4,13 @@ class GetNearbyKitchensUseCase {
   }
 
   async execute({ stateId, municipalityId }) {
-    return await this.kitchenRepository.findByLocationIds(
+    const kitchens = await this.kitchenRepository.findByLocationIds(
       stateId,
       municipalityId
+    );
+
+    return kitchens.filter(
+      k => k.approvalStatus === "approved"
     );
   }
 }
