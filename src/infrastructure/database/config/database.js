@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
+//CAMBIOSSSS
 const sequelize = new Sequelize(
   process.env.DB_DATABASE,
   process.env.DB_USERNAME,
@@ -11,10 +12,9 @@ const sequelize = new Sequelize(
     dialect: 'postgres',
     logging: false,
     dialectOptions: {
-
       ssl: {
-      require: true,
-       ejectUnauthorized: false
+        require: true,
+        rejectUnauthorized: false
       }
     }
   }
