@@ -26,6 +26,12 @@ router.post(
   controller.subscribe
 );
 
+router.delete(
+  '/:id/subscribe',
+  requireRole('Voluntario'),
+  controller.unsubscribe
+);
+
 router.get(
   '/me',
   requireAuth,
