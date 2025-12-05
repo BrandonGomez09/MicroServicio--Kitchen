@@ -79,10 +79,9 @@ class SequelizeKitchenRepository {
     return this.findByStatus("rejected");
   }
 
-  // --- NUEVO MÉTODO ---
   async findByOwnerId(ownerId) {
     const result = await KitchenModel.findOne({
-      where: { ownerId }, // Busca donde el dueño sea el ID del usuario
+      where: { ownerId }, 
       include: [
         { model: KitchenResponsibleModel, as: "responsible", attributes: { exclude: ["password"] }},
         { model: LocationModel, as: "location" }
